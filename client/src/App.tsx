@@ -10,6 +10,7 @@ import Services from "@/pages/Services";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Portal from "@/pages/Portal";
+import AdminIntegrations from "@/pages/AdminIntegrations";
 import NotFound from "@/pages/not-found";
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/portal/login" component={Portal} />
+      <Route path="/admin/integrations" component={AdminIntegrations} />
       <Route component={NotFound} />
     </Switch>
   );

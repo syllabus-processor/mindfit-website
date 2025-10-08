@@ -1,8 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertContactSchema, insertNewsletterSchema } from "@shared/schema";
+import { insertContactSchema, insertNewsletterSchema, insertIntegrationSettingSchema } from "@shared/schema";
 import { fromError } from "zod-validation-error";
+import { createProvider } from "./providers";
 
 // Email service placeholder - can be replaced with actual email service (Resend, SendGrid, etc.)
 async function sendEmail(to: string, subject: string, body: string) {
@@ -15,11 +16,37 @@ async function sendEmail(to: string, subject: string, body: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Contact form submission
+  // Contact form submission with provider integration
   app.post("/api/contact/submit", async (req, res) => {
     try {
       const validatedData = insertContactSchema.parse(req.body);
+      
+      // Store locally first
       const submission = await storage.createContactSubmission(validatedData);
+
+      // Get integration settings and forward to provider
+      const setting = await storage.getIntegrationSetting("contact_form");
+      if (setting && setting.enabled === "true") {
+        try {
+          const config = JSON.parse(setting.config || "{}");
+          const provider = createProvider(setting.provider as any, config);
+          
+          const providerResult = await provider.handleContactSubmission(
+            validatedData,
+            submission.id
+          );
+          
+          if (!providerResult.success) {
+            console.error("❌ Provider integration failed:", providerResult.error);
+            // Continue anyway - data is already stored locally
+          } else {
+            console.log(`✅ Contact forwarded to ${provider.name}:`, providerResult.externalId);
+          }
+        } catch (error: any) {
+          console.error("❌ Provider config error, falling back to standalone:", error.message);
+          // Continue with standalone behavior - data is already stored locally
+        }
+      }
 
       // Send confirmation email to user
       await sendEmail(
@@ -70,11 +97,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Newsletter subscription
+  // Newsletter subscription with provider integration
   app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
       const validatedData = insertNewsletterSchema.parse(req.body);
+      
+      // Store locally first
       const subscriber = await storage.createNewsletterSubscriber(validatedData);
+
+      // Get integration settings and forward to provider
+      const setting = await storage.getIntegrationSetting("newsletter");
+      if (setting && setting.enabled === "true") {
+        try {
+          const config = JSON.parse(setting.config || "{}");
+          const provider = createProvider(setting.provider as any, config);
+          
+          const providerResult = await provider.handleNewsletterSubscription(
+            validatedData,
+            subscriber.id
+          );
+          
+          if (!providerResult.success) {
+            console.error("❌ Provider integration failed:", providerResult.error);
+            // Continue anyway - data is already stored locally
+          } else {
+            console.log(`✅ Newsletter forwarded to ${provider.name}:`, providerResult.externalId);
+          }
+        } catch (error: any) {
+          console.error("❌ Provider config error, falling back to standalone:", error.message);
+          // Continue with standalone behavior - data is already stored locally
+        }
+      }
 
       // Send welcome email
       await sendEmail(
@@ -137,6 +190,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to fetch subscribers" 
+      });
+    }
+  });
+
+  // Integration settings endpoints
+  app.get("/api/admin/integrations", async (req, res) => {
+    try {
+      const settings = await storage.getAllIntegrationSettings();
+      res.json({ success: true, data: settings });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch integration settings" 
+      });
+    }
+  });
+
+  app.post("/api/admin/integrations", async (req, res) => {
+    try {
+      const validatedData = insertIntegrationSettingSchema.parse(req.body);
+      const setting = await storage.upsertIntegrationSetting(validatedData);
+      res.json({ 
+        success: true, 
+        message: "Integration settings updated",
+        data: setting 
+      });
+    } catch (error: any) {
+      if (error.name === "ZodError") {
+        const validationError = fromError(error);
+        return res.status(400).json({ 
+          success: false, 
+          message: validationError.message 
+        });
+      }
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update integration settings" 
       });
     }
   });

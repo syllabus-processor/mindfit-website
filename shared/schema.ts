@@ -25,6 +25,15 @@ export const newsletterSubscribers = pgTable("newsletter_subscribers", {
   subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
 });
 
+export const integrationSettings = pgTable("integration_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  dataType: text("data_type").notNull().unique(),
+  provider: text("provider").notNull(),
+  config: text("config").notNull(),
+  enabled: text("enabled").notNull().default("true"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -50,9 +59,25 @@ export const insertNewsletterSchema = createInsertSchema(newsletterSubscribers).
   email: z.string().email("Please enter a valid email address"),
 });
 
+export const insertIntegrationSettingSchema = createInsertSchema(integrationSettings).omit({
+  id: true,
+  updatedAt: true,
+}).extend({
+  dataType: z.enum(["contact_form", "newsletter"], {
+    required_error: "Data type is required",
+  }),
+  provider: z.enum(["standalone", "emrm", "simplysafe", "generic_webhook"], {
+    required_error: "Provider is required",
+  }),
+  config: z.string(),
+  enabled: z.enum(["true", "false"]).default("true"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertContact = z.infer<typeof insertContactSchema>;
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type InsertNewsletter = z.infer<typeof insertNewsletterSchema>;
 export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type IntegrationSetting = typeof integrationSettings.$inferSelect;
+export type InsertIntegrationSetting = z.infer<typeof insertIntegrationSettingSchema>;
