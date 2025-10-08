@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Settings, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import AdminLayout from "@/components/AdminLayout";
 
 interface IntegrationSetting {
   id: string;
@@ -299,7 +300,8 @@ export default function AdminIntegrations() {
   }
 
   return (
-    <div className="container mx-auto py-12 px-4 max-w-4xl" data-testid="page-admin-integrations">
+    <AdminLayout>
+    <div className="max-w-4xl mx-auto" data-testid="page-admin-integrations">
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-3 mb-2">
           <Settings className="h-8 w-8" />
@@ -335,5 +337,6 @@ export default function AdminIntegrations() {
         </CardContent>
       </Card>
     </div>
+    </AdminLayout>
   );
 }

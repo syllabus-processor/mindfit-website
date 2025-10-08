@@ -10,14 +10,18 @@ import Services from "@/pages/Services";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Portal from "@/pages/Portal";
+import AdminLogin from "@/pages/AdminLogin";
+import AdminDashboard from "@/pages/AdminDashboard";
+import AdminContacts from "@/pages/AdminContacts";
+import AdminSubscribers from "@/pages/AdminSubscribers";
 import AdminIntegrations from "@/pages/AdminIntegrations";
 import NotFound from "@/pages/not-found";
 
 function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   
-  // Portal page uses its own dark layout without header/footer
-  if (location.startsWith("/portal")) {
+  // Portal and admin pages use their own layout without public header/footer
+  if (location.startsWith("/portal") || location.startsWith("/admin")) {
     return <>{children}</>;
   }
 
@@ -38,6 +42,10 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/contact" component={Contact} />
       <Route path="/portal/login" component={Portal} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/contacts" component={AdminContacts} />
+      <Route path="/admin/subscribers" component={AdminSubscribers} />
       <Route path="/admin/integrations" component={AdminIntegrations} />
       <Route component={NotFound} />
     </Switch>

@@ -24,12 +24,20 @@ A modern, professional public-facing website for MindFit Mental Health, a therap
 - Email integration ready (placeholder for Resend/SendGrid)
 
 ### Pages
+
+**Public Website:**
 1. **Home** (`/`) - Hero section, services overview, team preview, testimonials, CTA
 2. **Services** (`/services`) - Detailed service offerings and process
 3. **About** (`/about`) - Team bios, values, FAQ
 4. **Contact** (`/contact`) - Contact form and information
 5. **Portal** (`/portal/login`) - Discreet login page for EMRM access (dark mode)
-6. **Admin Integrations** (`/admin/integrations`) - Configure provider integrations (EMRM, SimplySafe, webhooks, standalone)
+
+**Admin Backend:**
+1. **Admin Login** (`/admin/login`) - Simple username/password login
+2. **Dashboard** (`/admin/dashboard`) - Overview stats and quick actions
+3. **Contact Submissions** (`/admin/contacts`) - View and manage inquiries
+4. **Newsletter Subscribers** (`/admin/subscribers`) - View and export subscribers
+5. **Integration Settings** (`/admin/integrations`) - Configure provider integrations
 
 ## Key Features
 
@@ -138,6 +146,39 @@ A modern, professional public-facing website for MindFit Mental Health, a therap
 npm run dev
 ```
 Starts both Express backend and Vite frontend on port 5000.
+
+### Admin Setup (First Time Only)
+
+**IMPORTANT**: Admin users can ONLY be created via the CLI script for security. There is no public signup endpoint.
+
+Create the initial admin user using the setup script:
+
+```bash
+tsx scripts/create-admin.ts [username] [password]
+```
+
+Examples:
+```bash
+# Use default credentials (admin/admin123)
+tsx scripts/create-admin.ts
+
+# Custom credentials
+tsx scripts/create-admin.ts myusername mypassword123
+```
+
+**Security Notes:**
+- Password must be at least 8 characters
+- Change the default password immediately after first login
+- Admin users can only be created via this script (no public API endpoint)
+- Each username can only be created once
+
+Then login at `/admin/login`.
+
+**Admin Features:**
+- Dashboard with stats overview
+- View and manage contact form submissions
+- View and export newsletter subscribers
+- Configure provider integrations (EMRM, SimplySafe, webhooks, standalone)
 
 ### Storage
 Using PostgreSQL database (Neon) for persistent storage:
