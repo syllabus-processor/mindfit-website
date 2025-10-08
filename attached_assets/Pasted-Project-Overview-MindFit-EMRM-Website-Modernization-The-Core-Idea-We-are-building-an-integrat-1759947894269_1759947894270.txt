@@ -1,0 +1,84 @@
+Project Overview: MindFit EMRM + Website Modernization
+🎯 The Core Idea
+
+We are building an integrated digital ecosystem for MindFit Mental Health, a therapy practice specializing in tech-empowered treatment for kids, teens, and families. The project has two primary components:
+
+🧠 1. EMRM: The Electronic Medical Records Module
+
+A custom-built, therapist-centered, HIPAA-compliant platform that functions not just as an EMR — but as an intelligent practice partner.
+
+🛠️ Core Features:
+
+Encrypted Session Notes (SOAP, DAP, narrative)
+
+Treatment Planning tools
+
+Client Management with role-based access (Therapist, Supervisor, Admin)
+
+Appointment Scheduling with conflict detection + client history
+
+Automated Communication Hub:
+
+Reminders
+
+Follow-ups
+
+Onboarding sequences
+
+Audit-Ready Compliance Logging
+
+Analytics Dashboards for clinicians and supervisors
+
+Future-Ready Architecture:
+
+Therapist-scoped encryption keys
+
+Integration-ready with insurance billing, client portal, and clinical AI
+
+Tech Stack:
+React, Node.js, Express, PostgreSQL (Neon), Tailwind CSS, AES-256-GCM encryption, JWT auth, Resend email service
+
+🌐 2. Refactored Public Website
+
+A modern, client-friendly website that communicates the MindFit brand and smoothly transitions visitors into the EMRM onboarding funnel.
+
+🎨 Features:
+
+Home Page: Welcoming, clear CTA (“Schedule Appointment”)
+
+Services Page: Individual therapy, OCD consults, groups, behavior plans
+
+About Page: Team bios, FAQ, values
+
+Contact Page: Appointment request form with Resend email integration
+
+Client Portal Link: Seamless redirect to secure EMRM login
+
+Newsletter Signup: Mailchimp or Google Form
+
+Modern Design: Tailwind CSS + React-based layout for speed and mobile responsiveness
+
+Hosted on:
+Replit (with custom domain), connected to EMRM backend for secure form routing
+
+🔄 The Integration Strategy
+
+Website is public-facing (SEO, client-facing info)
+
+EMRM is protected, encrypted, and used internally by therapists + clients
+
+Both systems are branded consistently and linked via client portal access
+
+🧩 Why It Matters
+
+This project gives MindFit:
+
+Full control over clinical workflows and client data
+
+A HIPAA-compliant system designed for therapists, not hospitals
+
+An engaging, mobile-first digital presence for new clients
+
+Scalable infrastructure for growth (more therapists, locations, or services)
+
+A foundation to layer in telehealth, client self-service, and clinical intelligence
