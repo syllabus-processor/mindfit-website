@@ -1,3 +1,5 @@
+// Database storage implementation using PostgreSQL
+// Referenced from blueprint:javascript_database
 import { 
   type User, 
   type InsertUser,
@@ -5,8 +7,12 @@ import {
   type InsertContact,
   type NewsletterSubscriber,
   type InsertNewsletter,
+  users,
+  contactSubmissions,
+  newsletterSubscribers,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -21,75 +27,66 @@ export interface IStorage {
   getAllNewsletterSubscribers(): Promise<NewsletterSubscriber[]>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private contactSubmissions: Map<string, ContactSubmission>;
-  private newsletterSubscribers: Map<string, NewsletterSubscriber>;
-
-  constructor() {
-    this.users = new Map();
-    this.contactSubmissions = new Map();
-    this.newsletterSubscribers = new Map();
-  }
-
+export class DatabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
 
   async createContactSubmission(contact: InsertContact): Promise<ContactSubmission> {
-    const id = randomUUID();
-    const submission: ContactSubmission = {
-      ...contact,
-      id,
-      phone: contact.phone || null,
-      createdAt: new Date(),
-    };
-    this.contactSubmissions.set(id, submission);
+    const [submission] = await db
+      .insert(contactSubmissions)
+      .values({
+        ...contact,
+        phone: contact.phone || null,
+      })
+      .returning();
     return submission;
   }
 
   async getAllContactSubmissions(): Promise<ContactSubmission[]> {
-    return Array.from(this.contactSubmissions.values());
+    return await db.select().from(contactSubmissions);
   }
 
   async createNewsletterSubscriber(subscriber: InsertNewsletter): Promise<NewsletterSubscriber> {
-    const existing = await this.getNewsletterSubscriberByEmail(subscriber.email);
+    const normalizedEmail = subscriber.email.toLowerCase();
+    const existing = await this.getNewsletterSubscriberByEmail(normalizedEmail);
     if (existing) {
       throw new Error("Email already subscribed to newsletter");
     }
 
-    const id = randomUUID();
-    const newSubscriber: NewsletterSubscriber = {
-      ...subscriber,
-      id,
-      subscribedAt: new Date(),
-    };
-    this.newsletterSubscribers.set(id, newSubscriber);
+    const [newSubscriber] = await db
+      .insert(newsletterSubscribers)
+      .values({ email: normalizedEmail })
+      .returning();
     return newSubscriber;
   }
 
   async getNewsletterSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined> {
-    return Array.from(this.newsletterSubscribers.values()).find(
-      (sub) => sub.email.toLowerCase() === email.toLowerCase(),
-    );
+    const normalizedEmail = email.toLowerCase();
+    const [subscriber] = await db
+      .select()
+      .from(newsletterSubscribers)
+      .where(eq(newsletterSubscribers.email, normalizedEmail));
+    return subscriber || undefined;
   }
 
   async getAllNewsletterSubscribers(): Promise<NewsletterSubscriber[]> {
-    return Array.from(this.newsletterSubscribers.values());
+    return await db.select().from(newsletterSubscribers);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
