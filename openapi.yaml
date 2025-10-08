@@ -1,0 +1,603 @@
+openapi: 3.0.3
+info:
+  title: MindFit Website ↔ EMRM Integration API
+  description: |
+    API specification for integration between MindFit Mental Health public website 
+    and EMRM (Electronic Medical Records Module) system.
+    
+    This spec defines:
+    - Website APIs that EMRM should call
+    - EMRM APIs that website needs to consume
+    - Data models and security requirements
+  version: 1.0.0
+  contact:
+    name: MindFit Technical Team
+    email: dev@mindfithealth.com
+
+servers:
+  - url: https://mindfit-website.replit.app/api
+    description: Website Production API
+  - url: https://emrm.mindfithealth.com/api
+    description: EMRM Production API
+  - url: http://localhost:5000/api
+    description: Local Development
+
+tags:
+  - name: Website API
+    description: APIs provided by the website
+  - name: EMRM API
+    description: APIs that EMRM should provide
+  - name: Admin
+    description: Administrative endpoints
+
+paths:
+  # ==================== WEBSITE APIs ====================
+  /contact/submit:
+    post:
+      tags:
+        - Website API
+      summary: Submit contact form
+      description: Receives contact form submissions from website visitors
+      operationId: submitContactForm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactSubmission'
+            examples:
+              validSubmission:
+                summary: Valid contact form submission
+                value:
+                  name: John Doe
+                  email: john.doe@example.com
+                  phone: "(555) 123-4567"
+                  preferredContact: email
+                  message: I need help with my teen's anxiety and would like to schedule a consultation.
+      responses:
+        '200':
+          description: Contact form submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSubmissionResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /newsletter/subscribe:
+    post:
+      tags:
+        - Website API
+      summary: Subscribe to newsletter
+      description: Adds email to newsletter subscription list
+      operationId: subscribeNewsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSubscription'
+      responses:
+        '200':
+          description: Successfully subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsletterSubscriptionResponse'
+        '400':
+          description: Email already subscribed or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/contacts:
+    get:
+      tags:
+        - Website API
+        - Admin
+      summary: Get all contact submissions
+      description: Retrieve all contact form submissions (admin only)
+      operationId: getAllContacts
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of contact submissions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContactRecord'
+
+  /admin/subscribers:
+    get:
+      tags:
+        - Website API
+        - Admin
+      summary: Get all newsletter subscribers
+      description: Retrieve all newsletter subscribers (admin only)
+      operationId: getAllSubscribers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of subscribers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NewsletterRecord'
+
+  # ==================== EMRM APIs (To Be Implemented) ====================
+  /intake/contact:
+    post:
+      tags:
+        - EMRM API
+      summary: Create client from website contact
+      description: |
+        EMRM endpoint to receive contact form data and create client intake record.
+        Website will call this endpoint after storing contact submission.
+      operationId: createClientIntake
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EMRMIntakeRequest'
+      responses:
+        '200':
+          description: Client intake created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EMRMIntakeResponse'
+        '400':
+          description: Invalid data or duplicate client
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EMRMErrorResponse'
+        '401':
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EMRMErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - EMRM API
+      summary: Portal login authentication
+      description: Authenticate user credentials for portal access
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EMRMErrorResponse'
+
+  /auth/refresh:
+    post:
+      tags:
+        - EMRM API
+      summary: Refresh authentication token
+      description: Refresh expired session token
+      operationId: refreshToken
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+
+  /auth/logout:
+    post:
+      tags:
+        - EMRM API
+      summary: Logout user
+      description: End user session and invalidate tokens
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+
+  /marketing/subscriber:
+    post:
+      tags:
+        - EMRM API
+      summary: Receive newsletter subscriber
+      description: Optional webhook for newsletter subscriber sync
+      operationId: syncNewsletterSubscriber
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsletterSyncRequest'
+      responses:
+        '200':
+          description: Subscriber synced successfully
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: API key in format "Bearer emrm_live_sk_..."
+
+  schemas:
+    # ==================== Website Schemas ====================
+    ContactSubmission:
+      type: object
+      required:
+        - name
+        - email
+        - preferredContact
+        - message
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        phone:
+          type: string
+          nullable: true
+          example: "(555) 123-4567"
+        preferredContact:
+          type: string
+          enum: [email, phone]
+          example: email
+        message:
+          type: string
+          minLength: 10
+          example: I need help with my teen's anxiety.
+
+    ContactSubmissionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Message sent successfully
+        id:
+          type: string
+          format: uuid
+          example: 550e8400-e29b-41d4-a716-446655440000
+
+    ContactRecord:
+      allOf:
+        - $ref: '#/components/schemas/ContactSubmission'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+
+    NewsletterSubscription:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          example: subscriber@example.com
+
+    NewsletterSubscriptionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Successfully subscribed to newsletter
+        id:
+          type: string
+          format: uuid
+
+    NewsletterRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        subscribedAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation error occurred
+
+    # ==================== EMRM Schemas ====================
+    EMRMIntakeRequest:
+      type: object
+      required:
+        - source
+        - contactData
+        - websiteSubmissionId
+      properties:
+        source:
+          type: string
+          example: website_contact_form
+        contactData:
+          type: object
+          properties:
+            name:
+              type: string
+              example: John Doe
+            email:
+              type: string
+              format: email
+            phone:
+              type: string
+              nullable: true
+            preferredContact:
+              type: string
+              enum: [email, phone]
+            message:
+              type: string
+            submittedAt:
+              type: string
+              format: date-time
+        websiteSubmissionId:
+          type: string
+          format: uuid
+          description: Original submission ID from website database
+
+    EMRMIntakeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        clientId:
+          type: string
+          example: EMRM-12345
+          description: EMRM client identifier
+        status:
+          type: string
+          enum: [intake_pending, active, duplicate]
+          example: intake_pending
+        message:
+          type: string
+          example: Contact received and client record created
+        nextSteps:
+          type: object
+          properties:
+            notifyStaff:
+              type: boolean
+            sendConfirmation:
+              type: boolean
+            scheduleFollowUp:
+              type: string
+              example: within_24_hours
+
+    EMRMErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - DUPLICATE_CLIENT
+                - INVALID_DATA
+                - INTEGRATION_ERROR
+                - AUTHENTICATION_FAILED
+              example: DUPLICATE_CLIENT
+            message:
+              type: string
+              example: Client with this email already exists
+            field:
+              type: string
+              nullable: true
+              example: email
+            existingClientId:
+              type: string
+              nullable: true
+              example: EMRM-10234
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: therapist@mindfithealth.com
+        password:
+          type: string
+          format: password
+          example: SecurePass123!
+        source:
+          type: string
+          example: mindfit_website
+        deviceInfo:
+          type: object
+          properties:
+            userAgent:
+              type: string
+            ipAddress:
+              type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        sessionToken:
+          type: string
+          description: JWT session token
+          example: eyJhbGciOiJIUzI1NiIs...
+        refreshToken:
+          type: string
+          description: Refresh token for session renewal
+        expiresIn:
+          type: integer
+          description: Token expiry in seconds
+          example: 3600
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              example: user-123
+            role:
+              type: string
+              enum: [therapist, client, admin, supervisor]
+              example: therapist
+            name:
+              type: string
+              example: Dr. Sarah Johnson
+            permissions:
+              type: array
+              items:
+                type: string
+              example: [view_clients, edit_notes]
+        redirectUrl:
+          type: string
+          format: uri
+          example: https://emrm.mindfithealth.com/dashboard
+
+    TokenResponse:
+      type: object
+      properties:
+        sessionToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+
+    NewsletterSyncRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        subscribedAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          example: website_footer
+        tags:
+          type: array
+          items:
+            type: string
+          example: [website_visitor, interested_in_services]
+
+  examples:
+    ContactFormExample:
+      value:
+        name: Sarah Miller
+        email: sarah.miller@example.com
+        phone: "555-987-6543"
+        preferredContact: phone
+        message: I'm looking for family therapy services for my teenager who is struggling with anxiety and school performance. We're available for appointments on weekdays after 4pm.
+
+    LoginExample:
+      value:
+        email: dr.johnson@mindfithealth.com
+        password: SecureTherapistPass123!
+        source: mindfit_website
+        deviceInfo:
+          userAgent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)
+          ipAddress: 192.168.1.100
