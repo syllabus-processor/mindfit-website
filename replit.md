@@ -3,6 +3,10 @@
 ## Project Overview
 A modern, professional public-facing website for MindFit Mental Health, a therapy practice specializing in tech-empowered treatment for kids, teens, and families. This website serves as the marketing presence and provides discreet access to the existing EMRM (Electronic Medical Records Module) system.
 
+### Deployment Plan
+1. **Beta/Preview**: `mindfit.resonantgrid.dev` - Private preview and beta user testing
+2. **Production**: `https://mindfitmentalhealth.com/` - Final production domain (pending DNS access)
+
 ## Architecture
 
 ### Frontend
