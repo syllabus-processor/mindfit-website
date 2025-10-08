@@ -1,0 +1,81 @@
+# DigitalOcean App Platform Specification
+name: mindfit-website
+region: nyc
+
+# Database
+databases:
+  - name: mindfit-db
+    engine: PG
+    version: "16"
+    production: true
+    cluster_name: mindfit-cluster
+
+# Application Service
+services:
+  - name: web
+    github:
+      repo: your-org/mindfit-website
+      branch: main
+      deploy_on_push: true
+    
+    build_command: npm ci && npm run build
+    run_command: node dist/index.js
+    
+    instance_count: 1
+    instance_size_slug: basic-xs
+    
+    # Environment variables
+    envs:
+      - key: NODE_ENV
+        value: production
+      
+      - key: DATABASE_URL
+        type: SECRET
+        value: ${mindfit-db.DATABASE_URL}
+      
+      - key: SESSION_SECRET
+        type: SECRET
+        # Set this in DigitalOcean dashboard
+      
+      - key: EMRM_API_BASE_URL
+        type: SECRET
+        # Set this in DigitalOcean dashboard
+      
+      - key: EMRM_API_KEY
+        type: SECRET
+        # Set this in DigitalOcean dashboard
+    
+    # HTTP configuration
+    http_port: 5000
+    
+    # Health check
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    
+    # Routes
+    routes:
+      - path: /
+
+# Custom domains (add after initial deployment)
+domains:
+  - domain: mindfit.resonantgrid.dev
+    type: PRIMARY
+  # Uncomment when ready for production:
+  # - domain: mindfitmentalhealth.com
+  #   type: ALIAS
+
+# Static site settings (optional CDN)
+static_sites: []
+
+# Alerts
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+  
+# Jobs (for cron tasks if needed)
+jobs: []

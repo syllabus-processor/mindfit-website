@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: mindfit-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PGUSER:-mindfit}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-mindfit_dev_password}
+      POSTGRES_DB: ${PGDATABASE:-mindfit}
+    ports:
+      - "${PGPORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-mindfit}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MindFit Website Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mindfit-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${PGUSER:-mindfit}:${PGPASSWORD:-mindfit_dev_password}@postgres:5432/${PGDATABASE:-mindfit}
+      SESSION_SECRET: ${SESSION_SECRET:-change_me_in_production}
+      EMRM_API_BASE_URL: ${EMRM_API_BASE_URL:-}
+      EMRM_API_KEY: ${EMRM_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
+    driver: local

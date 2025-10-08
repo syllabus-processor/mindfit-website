@@ -6,6 +6,7 @@ A modern, professional public-facing website for MindFit Mental Health, a therap
 ### Deployment Plan
 1. **Beta/Preview**: `mindfit.resonantgrid.dev` - Private preview and beta user testing
 2. **Production**: `https://mindfitmentalhealth.com/` - Final production domain (pending DNS access)
+3. **Hosting**: DigitalOcean (dockerized deployment)
 
 ## Architecture
 
@@ -196,8 +197,36 @@ The portal login page (`/portal/login`) is prepared to redirect to the EMRM syst
 - Set `VITE_EMRM_URL` environment variable
 - Or modify the `window.location.href` redirect
 
+## Docker Deployment
+
+### Quick Start
+```bash
+# Build and run with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### DigitalOcean Deployment
+See `deploy/digitalocean/README.md` for complete deployment guide including:
+- App Platform (managed, recommended)
+- Droplet + Docker (self-managed)
+- Kubernetes (enterprise scale)
+
+### Environment Variables for Production
+```bash
+DATABASE_URL=postgresql://user:pass@host:5432/mindfit
+SESSION_SECRET=<generate-secure-random-32-chars>
+EMRM_API_BASE_URL=https://emrm.mindfithealth.com/api
+EMRM_API_KEY=emrm_live_sk_...
+NODE_ENV=production
+```
+
 ## Future Enhancements
-- Database persistence (PostgreSQL)
 - Real email service integration (Resend)
 - Blog/resources section
 - Scheduling widget integration
