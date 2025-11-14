@@ -1,40 +1,40 @@
-# Multi-stage build for MindFit Mental Health Website
-FROM node:20-alpine AS builder
+  # Multi-stage build for MindFit Mental Health Website
+  FROM node:20-alpine AS builder
 
-WORKDIR /app
+  WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+  # Copy package files
+  COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+  # Install dependencies
+  RUN npm ci
 
-# Copy source code
-COPY . .
+  # Copy source code
+  COPY . .
 
-# Build frontend and backend
-RUN npm run build
+  # Build frontend and backend
+  RUN npm run build
 
-# Production stage
-FROM node:20-alpine AS production
+  # Production stage
+  FROM node:20-alpine AS production
 
-WORKDIR /app
+  WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+  # Copy package files
+  COPY package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production
+  # Install production dependencies only
+  RUN npm ci --only=production
 
-# Copy built application from builder
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
+  # Copy built application from builder
+  # Vite builds frontend to dist/public, esbuild builds server to dist/
+  COPY --from=builder /app/dist ./dist
 
-# Expose port
-EXPOSE 5000
+  # Expose port
+  EXPOSE 5000
 
-# Set environment to production
-ENV NODE_ENV=production
+  # Set environment to production
+  ENV NODE_ENV=production
 
-# Start the application
-CMD ["node", "dist/index.js"]
+  # Start the application
+  CMD ["node", "dist/index.js"]
