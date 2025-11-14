@@ -10,11 +10,11 @@
  * npm install cors
  *
  * USAGE:
- * const corsConfig = require('./security-middleware/05-cors-config');
+ * import corsConfig from './security-middleware/05-cors-config';
  * app.use(corsConfig);
  */
 
-const cors = require('cors');
+import cors from 'cors';
 
 // =============================================================================
 // CORS CONFIGURATION
@@ -126,21 +126,21 @@ function additionalCORSHeaders(req, res, next) {
 // EXPORTS
 // =============================================================================
 
-module.exports = [corsMiddleware, additionalCORSHeaders];
-module.exports.corsMiddleware = corsMiddleware;
-module.exports.additionalCORSHeaders = additionalCORSHeaders;
-module.exports.ALLOWED_ORIGINS = ALLOWED_ORIGINS; // Export for testing
+export default [corsMiddleware, additionalCORSHeaders];
+export const corsMiddleware;
+export const additionalCORSHeaders;
+export const ALLOWED_ORIGINS; // Export for testing
 
 /**
  * IMPLEMENTATION EXAMPLE:
  *
- * const corsConfig = require('./security-middleware/05-cors-config');
+ * import corsConfig from './security-middleware/05-cors-config';
  *
  * // Apply CORS to all routes
  * app.use(corsConfig);
  *
  * // OR apply selectively:
- * const { corsMiddleware } = require('./security-middleware/05-cors-config');
+ * import { corsMiddleware } from './security-middleware/05-cors-config';
  * app.use('/api/', corsMiddleware);
  */
 
@@ -149,13 +149,13 @@ module.exports.ALLOWED_ORIGINS = ALLOWED_ORIGINS; // Export for testing
  *
  * For public API endpoints that need different CORS settings:
  *
- * const cors = require('cors');
+ * import cors from 'cors';
  *
  * // Public endpoint - allow all origins
  * app.get('/api/public/status', cors(), statusHandler);
  *
  * // Admin endpoint - use strict CORS
- * const corsConfig = require('./security-middleware/05-cors-config');
+ * import corsConfig from './security-middleware/05-cors-config';
  * app.post('/api/admin/login', corsConfig, loginHandler);
  */
 
@@ -232,7 +232,7 @@ module.exports.ALLOWED_ORIGINS = ALLOWED_ORIGINS; // Export for testing
  * For additional CSRF protection, consider:
  * npm install csurf
  *
- * const csrf = require('csurf');
+ * import csrf from 'csurf';
  * const csrfProtection = csrf({ cookie: true });
  * app.use(csrfProtection);
  */

@@ -10,13 +10,13 @@
  * npm install express-validator
  *
  * USAGE:
- * const { validateContactForm, validateLogin, validate } = require('./security-middleware/04-input-validation');
+ * import { validateContactForm, validateLogin, validate } from './security-middleware/04-input-validation';
  *
  * app.post('/api/contact/submit', validateContactForm, contactHandler);
  * app.post('/api/admin/login', validateLogin, loginHandler);
  */
 
-const { body, param, query, validationResult } = require('express-validator');
+import { body, param, query, validationResult } from 'express-validator';
 
 // =============================================================================
 // VALIDATION MIDDLEWARE - Apply to all routes that use validation
@@ -333,7 +333,7 @@ function detectSQLInjection(req, res, next) {
 // EXPORTS
 // =============================================================================
 
-module.exports = {
+export {
   // Validation chains
   validateContactForm,
   validateNewsletter,

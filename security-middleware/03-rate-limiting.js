@@ -10,14 +10,14 @@
  * npm install express-rate-limit
  *
  * USAGE:
- * const { loginLimiter, apiLimiter, strictLimiter } = require('./security-middleware/03-rate-limiting');
+ * import { loginLimiter, apiLimiter, strictLimiter } from './security-middleware/03-rate-limiting';
  *
  * // Apply to routes:
  * app.post('/api/admin/login', loginLimiter, loginHandler);
  * app.use('/api/', apiLimiter);
  */
 
-const rateLimit = require('express-rate-limit');
+import rateLimit from 'express-rate-limit';
 
 // =============================================================================
 // RATE LIMIT STORES
@@ -30,8 +30,8 @@ const rateLimit = require('express-rate-limit');
  * For Redis (recommended):
  * npm install rate-limit-redis ioredis
  *
- * const RedisStore = require('rate-limit-redis');
- * const Redis = require('ioredis');
+ * import RedisStore from 'rate-limit-redis';
+ * import Redis from 'ioredis';
  * const redis = new Redis(process.env.REDIS_URL);
  */
 
@@ -240,7 +240,7 @@ const globalLimiter = rateLimit({
 // EXPORTS
 // =============================================================================
 
-module.exports = {
+export {
   loginLimiter,
   apiLimiter,
   contactLimiter,
@@ -313,8 +313,8 @@ module.exports = {
  *
  * For multi-instance deployments, use Redis store:
  *
- * const RedisStore = require('rate-limit-redis');
- * const Redis = require('ioredis');
+ * import RedisStore from 'rate-limit-redis';
+ * import Redis from 'ioredis';
  *
  * const redis = new Redis({
  *   host: process.env.REDIS_HOST,

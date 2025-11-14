@@ -10,11 +10,11 @@
  * npm install helmet
  *
  * USAGE:
- * const helmetConfig = require('./security-middleware/01-helmet-config');
+ * import helmetConfig from './security-middleware/01-helmet-config';
  * app.use(helmetConfig);
  */
 
-const helmet = require('helmet');
+import helmet from 'helmet';
 
 const helmetConfig = helmet({
   // Content Security Policy - Prevents XSS attacks
@@ -155,7 +155,7 @@ function additionalSecurityHeaders(req, res, next) {
 }
 
 // Export middleware
-module.exports = [helmetConfig, additionalSecurityHeaders];
+export default [helmetConfig, additionalSecurityHeaders];
 
 /**
  * TESTING:

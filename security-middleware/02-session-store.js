@@ -13,13 +13,14 @@
  * The connect-pg-simple package will auto-create the sessions table if createTableIfMissing: true
  *
  * USAGE:
- * const sessionMiddleware = require('./security-middleware/02-session-store');
+ * import sessionMiddleware from './security-middleware/02-session-store';
  * app.use(sessionMiddleware);
  */
 
-const session = require('express-session');
-const pgSession = require('connect-pg-simple')(session);
-const pg = require('pg');
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+const pgSession = connectPgSimple(session);
+import pg from 'pg';
 
 // Database configuration
 const pool = new pg.Pool({
@@ -112,10 +113,10 @@ async function cleanupSessionStore() {
 process.on('SIGTERM', cleanupSessionStore);
 process.on('SIGINT', cleanupSessionStore);
 
-module.exports = sessionMiddleware;
-module.exports.checkHealth = checkSessionStoreHealth;
-module.exports.cleanup = cleanupSessionStore;
-module.exports.pool = pool; // Export pool for advanced usage
+export default sessionMiddleware;
+export const checkSessionStoreHealth;
+export const cleanupSessionStore;
+export const pool; // Export pool for advanced usage
 
 /**
  * MIGRATION NOTES:
@@ -139,7 +140,7 @@ module.exports.pool = pool; // Export pool for advanced usage
  *
  * 4. MONITORING:
  *    - Add to health check endpoint:
- *      const { checkHealth } = require('./security-middleware/02-session-store');
+ *      import { checkHealth } from './security-middleware/02-session-store';
  *      app.get('/health', async (req, res) => {
  *        const sessionHealth = await checkHealth();
  *        res.json({ sessions: sessionHealth });
