@@ -29,11 +29,11 @@ console.log('✅ CORS configured');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// 4. Session Store (FIXES MEMORY LEAK) - TEMPORARILY DISABLED for VPC troubleshooting
+// 4. Session Store (FIXES MEMORY LEAK)
 // @ts-ignore - JS module
-// import sessionMiddleware from "../security-middleware/02-session-store.js";
-// app.use(sessionMiddleware);
-console.log('⚠️  Session store DISABLED (troubleshooting VPC)');
+import sessionMiddleware from "../security-middleware/02-session-store.js";
+app.use(sessionMiddleware);
+console.log('✅ Session store configured (PostgreSQL)');
 
 // 5. Input Validation Protection
 // @ts-ignore - JS module
@@ -42,11 +42,11 @@ app.use(xssProtection);
 app.use(detectSQLInjection);
 console.log('✅ Input validation configured');
 
-// 6. Rate Limiting - TEMPORARILY DISABLED for Phase 1 testing
+// 6. Rate Limiting
 // @ts-ignore - JS module
-// import { apiLimiter } from "../security-middleware/03-rate-limiting.js";
-// app.use('/api/', apiLimiter);
-console.log('⚠️  Rate limiting DISABLED (testing)');
+import { apiLimiter } from "../security-middleware/03-rate-limiting.js";
+app.use('/api/', apiLimiter);
+console.log('✅ Rate limiting configured');
 
 // =============================================================================
 // REQUEST LOGGING MIDDLEWARE

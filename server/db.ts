@@ -1,11 +1,8 @@
-// Database connection setup using Neon PostgreSQL
-// Referenced from blueprint:javascript_database
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+// Database connection setup using PostgreSQL (DigitalOcean Managed Database)
+// Switched from Neon serverless (WebSocket) to standard pg (TCP)
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
-
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -13,5 +10,11 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // Required for DigitalOcean managed databases
+  }
+});
+
+export const db = drizzle(pool, { schema });
