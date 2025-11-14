@@ -6,6 +6,10 @@ import { fromError } from "zod-validation-error";
 import { createProvider } from "./providers";
 import bcrypt from "bcryptjs";
 
+// Security middleware - Rate limiters
+// @ts-ignore - JS module
+import { loginLimiter, contactLimiter, newsletterLimiter } from "../security-middleware/03-rate-limiting.js";
+
 // Email service placeholder - can be replaced with actual email service (Resend, SendGrid, etc.)
 async function sendEmail(to: string, subject: string, body: string) {
   console.log("📧 Email would be sent:");
@@ -26,8 +30,8 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Admin login
-  app.post("/api/admin/login", async (req, res) => {
+  // Admin login - with rate limiting
+  app.post("/api/admin/login", loginLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
       
@@ -91,8 +95,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(401).json({ success: false, message: "Not authenticated" });
   });
 
-  // Contact form submission with provider integration
-  app.post("/api/contact/submit", async (req, res) => {
+  // Contact form submission with provider integration - with rate limiting
+  app.post("/api/contact/submit", contactLimiter, async (req, res) => {
     try {
       const validatedData = insertContactSchema.parse(req.body);
       
@@ -173,7 +177,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Newsletter subscription with provider integration
-  app.post("/api/newsletter/subscribe", async (req, res) => {
+  // Newsletter subscription - with rate limiting
+  app.post("/api/newsletter/subscribe", newsletterLimiter, async (req, res) => {
     try {
       const validatedData = insertNewsletterSchema.parse(req.body);
       

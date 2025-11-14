@@ -1,23 +1,51 @@
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
-// Session configuration
-app.use(session({
-  secret: process.env.SESSION_SECRET || "mindfit-secret-change-in-production",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-  },
-}));
+// =============================================================================
+// SECURITY MIDDLEWARE - APPLY IN THIS ORDER
+// =============================================================================
+
+// 1. Helmet - Security Headers
+// @ts-ignore - JS module
+import helmetConfig from "../security-middleware/01-helmet-config.js";
+app.use(helmetConfig);
+console.log('✅ Security headers configured (Helmet)');
+
+// 2. CORS Configuration
+// @ts-ignore - JS module
+import corsConfig from "../security-middleware/05-cors-config.js";
+app.use(corsConfig);
+console.log('✅ CORS configured');
+
+// 3. Body Parsers
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// 4. Session Store (FIXES MEMORY LEAK)
+// @ts-ignore - JS module
+import sessionMiddleware from "../security-middleware/02-session-store.js";
+app.use(sessionMiddleware);
+console.log('✅ Session store configured (PostgreSQL)');
+
+// 5. Input Validation Protection
+// @ts-ignore - JS module
+import { xssProtection, detectSQLInjection } from "../security-middleware/04-input-validation.js";
+app.use(xssProtection);
+app.use(detectSQLInjection);
+console.log('✅ Input validation configured');
+
+// 6. Rate Limiting - Global API rate limit
+// @ts-ignore - JS module
+import { apiLimiter } from "../security-middleware/03-rate-limiting.js";
+app.use('/api/', apiLimiter);
+console.log('✅ Rate limiting configured');
+
+// =============================================================================
+// REQUEST LOGGING MIDDLEWARE
+// =============================================================================
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -49,9 +77,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// =============================================================================
+// ROUTES REGISTRATION
+// =============================================================================
+
 (async () => {
   const server = await registerRoutes(app);
 
+  // Error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -60,25 +93,21 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+  // Vite dev server or static file serving
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Start server
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`✅ MindFit server running on port ${port}`);
+    log('🔒 All security middleware active');
   });
 })();

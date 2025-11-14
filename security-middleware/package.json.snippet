@@ -1,0 +1,96 @@
+{
+  "name": "mindfit-security-dependencies",
+  "description": "Security middleware dependencies for MindFit platform",
+  "version": "1.0.0",
+  "dependencies": {
+    "helmet": "^7.1.0",
+    "express-session": "^1.18.0",
+    "connect-pg-simple": "^9.0.1",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "cors": "^2.8.5",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0",
+    "chai": "^4.3.10"
+  }
+}
+
+/**
+ * INSTALLATION INSTRUCTIONS:
+ *
+ * 1. Copy these dependencies to your package.json "dependencies" section
+ *
+ * 2. Run: npm install
+ *
+ * 3. Expected installation time: 1-2 minutes
+ *
+ * 4. Total package size: ~15MB
+ *
+ * DEPENDENCY DETAILS:
+ *
+ * helmet (7.1.0)
+ * - Purpose: Security headers (CSP, HSTS, X-Frame-Options, etc.)
+ * - Size: 300KB
+ * - Zero dependencies
+ *
+ * express-session (1.18.0)
+ * - Purpose: Session management
+ * - Size: 50KB
+ * - Required for session store
+ *
+ * connect-pg-simple (9.0.1)
+ * - Purpose: PostgreSQL session store (fixes memory leak)
+ * - Size: 20KB
+ * - Depends on: pg
+ *
+ * express-rate-limit (7.1.5)
+ * - Purpose: Rate limiting (brute force protection)
+ * - Size: 40KB
+ * - Zero dependencies (memory store)
+ *
+ * express-validator (7.0.1)
+ * - Purpose: Input validation and sanitization
+ * - Size: 300KB
+ * - Depends on: validator.js
+ *
+ * cors (2.8.5)
+ * - Purpose: CORS configuration (CSRF protection)
+ * - Size: 15KB
+ * - Zero dependencies
+ *
+ * pg (8.11.3)
+ * - Purpose: PostgreSQL client (already installed)
+ * - Size: 600KB
+ * - Required for session store
+ *
+ * OPTIONAL DEPENDENCIES (for advanced features):
+ *
+ * rate-limit-redis (4.2.0)
+ * - Purpose: Redis store for rate limiting (multi-instance deployments)
+ * - Only needed if scaling to multiple app instances
+ * - Install with: npm install rate-limit-redis ioredis
+ *
+ * winston (3.11.0)
+ * - Purpose: Security logging
+ * - Recommended for production
+ * - Install with: npm install winston
+ *
+ * csurf (1.11.0)
+ * - Purpose: Additional CSRF protection
+ * - Optional (CORS provides basic CSRF protection)
+ * - Install with: npm install csurf cookie-parser
+ *
+ * COMPATIBILITY:
+ *
+ * - Node.js: >= 14.x (recommend 18.x or 20.x)
+ * - Express: >= 4.x
+ * - PostgreSQL: >= 12.x
+ *
+ * TESTING:
+ *
+ * After installation, verify:
+ * node -e "console.log(require('helmet'), require('express-validator'))"
+ * # Should not throw errors
+ */
