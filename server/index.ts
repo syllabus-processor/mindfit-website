@@ -42,11 +42,11 @@ app.use(xssProtection);
 app.use(detectSQLInjection);
 console.log('✅ Input validation configured');
 
-// 6. Rate Limiting - Global API rate limit
+// 6. Rate Limiting - TEMPORARILY DISABLED for Phase 1 testing
 // @ts-ignore - JS module
-import { apiLimiter } from "../security-middleware/03-rate-limiting.js";
-app.use('/api/', apiLimiter);
-console.log('✅ Rate limiting configured');
+// import { apiLimiter } from "../security-middleware/03-rate-limiting.js";
+// app.use('/api/', apiLimiter);
+console.log('⚠️  Rate limiting DISABLED (testing)');
 
 // =============================================================================
 // REQUEST LOGGING MIDDLEWARE
