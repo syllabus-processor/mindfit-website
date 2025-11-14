@@ -1,4 +1,4 @@
-  # Multi-stage build for MindFit Mental Health Website
+# Multi-stage build for MindFit Mental Health Website
   FROM node:20-alpine AS builder
 
   WORKDIR /app
@@ -23,11 +23,11 @@
   # Copy package files
   COPY package*.json ./
 
-  # Install production dependencies only
-  RUN npm ci --only=production
+  # Install ALL dependencies (not just production)
+  RUN npm ci
 
   # Copy built application from builder
-  # Vite builds frontend to dist/public, esbuild builds server to dist/
+  # Vite builds frontend to dist/public, server builds to dist/
   COPY --from=builder /app/dist ./dist
 
   # Expose port
@@ -38,3 +38,11 @@
 
   # Start the application
   CMD ["node", "dist/index.js"]
+
+  Change Made:
+
+  Line 24 - Changed from:
+  RUN npm ci --only=production
+
+  To:
+  RUN npm ci
