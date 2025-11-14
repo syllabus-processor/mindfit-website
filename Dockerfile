@@ -38,11 +38,3 @@
 
   # Start the application
   CMD ["node", "dist/index.js"]
-
-  Change Made:
-
-  Line 24 - Changed from:
-  RUN npm ci --only=production
-
-  To:
-  RUN npm ci
