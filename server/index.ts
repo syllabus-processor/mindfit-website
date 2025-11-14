@@ -29,11 +29,11 @@ console.log('✅ CORS configured');
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
-// 4. Session Store (FIXES MEMORY LEAK)
+// 4. Session Store (FIXES MEMORY LEAK) - TEMPORARILY DISABLED for VPC troubleshooting
 // @ts-ignore - JS module
-import sessionMiddleware from "../security-middleware/02-session-store.js";
-app.use(sessionMiddleware);
-console.log('✅ Session store configured (PostgreSQL)');
+// import sessionMiddleware from "../security-middleware/02-session-store.js";
+// app.use(sessionMiddleware);
+console.log('⚠️  Session store DISABLED (troubleshooting VPC)');
 
 // 5. Input Validation Protection
 // @ts-ignore - JS module
