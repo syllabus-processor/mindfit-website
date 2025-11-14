@@ -114,9 +114,7 @@ process.on('SIGTERM', cleanupSessionStore);
 process.on('SIGINT', cleanupSessionStore);
 
 export default sessionMiddleware;
-export const checkSessionStoreHealth;
-export const cleanupSessionStore;
-export const pool; // Export pool for advanced usage
+export { checkSessionStoreHealth, cleanupSessionStore, pool };
 
 /**
  * MIGRATION NOTES:

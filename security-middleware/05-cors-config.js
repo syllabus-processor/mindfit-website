@@ -127,9 +127,7 @@ function additionalCORSHeaders(req, res, next) {
 // =============================================================================
 
 export default [corsMiddleware, additionalCORSHeaders];
-export const corsMiddleware;
-export const additionalCORSHeaders;
-export const ALLOWED_ORIGINS; // Export for testing
+export { corsMiddleware, additionalCORSHeaders, ALLOWED_ORIGINS };
 
 /**
  * IMPLEMENTATION EXAMPLE:
