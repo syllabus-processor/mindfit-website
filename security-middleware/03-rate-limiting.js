@@ -45,11 +45,8 @@ const loginLimiter = rateLimit({
   skipSuccessfulRequests: false, // Count successful logins
   skipFailedRequests: false, // Count failed logins
 
-  // Custom key generator - Rate limit by IP + username combination
-  keyGenerator: (req) => {
-    const username = req.body?.username || 'anonymous';
-    return `${req.ip}:${username}`;
-  },
+  // Use standard key generator (IP-based, handles IPv6 correctly)
+  // Note: Username-specific limiting moved to application logic
 
   // Custom response handler
   handler: (req, res) => {

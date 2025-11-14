@@ -5,6 +5,11 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 
 // =============================================================================
+// TRUST PROXY - Required for correct client IP detection behind Cloudflare/DO proxy
+// =============================================================================
+app.set('trust proxy', true);
+
+// =============================================================================
 // SECURITY MIDDLEWARE - APPLY IN THIS ORDER
 // =============================================================================
 
