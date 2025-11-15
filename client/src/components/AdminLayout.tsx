@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, MessageSquare, Users, Settings, Menu } from "lucide-react";
+import { LogOut, LayoutDashboard, MessageSquare, Users, Settings, Menu, FileText } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -105,6 +105,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { href: "/admin/referrals", label: "Referrals", icon: FileText },
     { href: "/admin/contacts", label: "Contact Submissions", icon: MessageSquare },
     { href: "/admin/subscribers", label: "Newsletter Subscribers", icon: Users },
     { href: "/admin/integrations", label: "Integration Settings", icon: Settings },

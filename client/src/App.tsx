@@ -15,6 +15,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import AdminContacts from "@/pages/AdminContacts";
 import AdminSubscribers from "@/pages/AdminSubscribers";
 import AdminIntegrations from "@/pages/AdminIntegrations";
+import AdminReferrals from "@/pages/AdminReferrals";
 import NotFound from "@/pages/not-found";
 
 function Layout({ children }: { children: React.ReactNode }) {
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/admin/contacts" component={AdminContacts} />
       <Route path="/admin/subscribers" component={AdminSubscribers} />
       <Route path="/admin/integrations" component={AdminIntegrations} />
+      <Route path="/admin/referrals" component={AdminReferrals} />
       <Route component={NotFound} />
     </Switch>
   );
