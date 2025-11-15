@@ -5,8 +5,9 @@ import { setupVite, serveStatic, log } from "./vite";
 const app = express();
 
 // =============================================================================
-// TRUST PROXY - Required for correct client IP detection behind Cloudflare/DO proxy
+// TRUST PROXY - Required for Express behind reverse proxy
 // Set to 1 to trust only the first proxy (Cloudflare)
+// This ensures req.ip contains the actual client IP, not the proxy IP
 // =============================================================================
 app.set('trust proxy', 1);
 
@@ -43,11 +44,10 @@ app.use(xssProtection);
 app.use(detectSQLInjection);
 console.log('✅ Input validation configured');
 
-// 6. Rate Limiting
-// @ts-ignore - JS module
-import { apiLimiter } from "../security-middleware/03-rate-limiting.js";
-app.use('/api/', apiLimiter);
-console.log('✅ Rate limiting configured');
+// 6. Rate Limiting - Using Cloudflare (not express-rate-limit)
+// Rate limiting is now handled at the CDN edge via Cloudflare WAF
+// See: /mnt/d/projects/mindfit-fixes/CLOUDFLARE_RATE_LIMITING_CONFIG.md
+console.log('⚠️  Rate limiting handled by Cloudflare WAF');
 
 // =============================================================================
 // REQUEST LOGGING MIDDLEWARE
