@@ -468,6 +468,12 @@ export async function downloadEventICS(req: Request, res: Response) {
  * @param {Function} authMiddleware - Authentication middleware function
  */
 export function registerEventRoutes(router: Router, authMiddleware?: any): void {
+  // Public routes MUST be registered BEFORE parameterized routes
+  // Otherwise Express will match /api/events/:id before /api/events/public
+  router.get("/api/events/public", getPublicEvents);
+  router.get("/api/events/:id/ics", downloadEventICS);
+  router.get("/api/public/events/:id", getPublicEvent);
+
   if (authMiddleware) {
     // Protected admin routes
     router.post("/api/events", authMiddleware, createEvent);
@@ -477,11 +483,6 @@ export function registerEventRoutes(router: Router, authMiddleware?: any): void 
     router.put("/api/events/:id/publish", authMiddleware, toggleEventPublish);
     router.delete("/api/events/:id", authMiddleware, deleteEvent);
   }
-
-  // Public routes (no auth required)
-  router.get("/api/events/public", getPublicEvents);
-  router.get("/api/events/:id/ics", downloadEventICS);
-  router.get("/api/public/events/:id", getPublicEvent);
 }
 
 // ============================================================================
