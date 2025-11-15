@@ -7,8 +7,10 @@ import { createProvider } from "./providers";
 import bcrypt from "bcryptjs";
 
 // Security middleware - Rate limiters
+// NOTE: Rate limiting disabled - using Cloudflare WAF instead
+// See: /mnt/d/projects/mindfit-fixes/CLOUDFLARE_RATE_LIMITING_CONFIG.md
 // @ts-ignore - JS module
-import { loginLimiter, contactLimiter, newsletterLimiter } from "../security-middleware/03-rate-limiting.js";
+// import { loginLimiter, contactLimiter, newsletterLimiter } from "../security-middleware/03-rate-limiting.js";
 
 // Email service placeholder - can be replaced with actual email service (Resend, SendGrid, etc.)
 async function sendEmail(to: string, subject: string, body: string) {
@@ -30,8 +32,8 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Admin login - with rate limiting
-  app.post("/api/admin/login", loginLimiter, async (req, res) => {
+  // Admin login - rate limiting handled by Cloudflare WAF
+  app.post("/api/admin/login", async (req, res) => {
     try {
       const { username, password } = req.body;
       
@@ -96,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contact form submission with provider integration - with rate limiting
-  app.post("/api/contact/submit", contactLimiter, async (req, res) => {
+  app.post("/api/contact/submit", async (req, res) => {
     try {
       const validatedData = insertContactSchema.parse(req.body);
       
@@ -178,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Newsletter subscription with provider integration
   // Newsletter subscription - with rate limiting
-  app.post("/api/newsletter/subscribe", newsletterLimiter, async (req, res) => {
+  app.post("/api/newsletter/subscribe", async (req, res) => {
     try {
       const validatedData = insertNewsletterSchema.parse(req.body);
       
