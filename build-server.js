@@ -20,6 +20,7 @@
     external: [
       'express',
       'ws',
+      'pg',
       '@neondatabase/serverless',
       'drizzle-orm',
       'express-session',
