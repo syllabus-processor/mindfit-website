@@ -465,17 +465,17 @@ export async function downloadEventICS(req: Request, res: Response) {
  * Register event routes on Express router
  *
  * @param {Router} router - Express router instance
- * @param {boolean} requiresAuth - Whether to require authentication (default: true)
+ * @param {Function} authMiddleware - Authentication middleware function
  */
-export function registerEventRoutes(router: Router, requiresAuth: boolean = true): void {
-  if (requiresAuth) {
+export function registerEventRoutes(router: Router, authMiddleware?: any): void {
+  if (authMiddleware) {
     // Protected admin routes
-    router.post("/api/events", createEvent);
-    router.get("/api/events", getAllEvents);
-    router.get("/api/events/:id", getEvent);
-    router.put("/api/events/:id", updateEvent);
-    router.put("/api/events/:id/publish", toggleEventPublish);
-    router.delete("/api/events/:id", deleteEvent);
+    router.post("/api/events", authMiddleware, createEvent);
+    router.get("/api/events", authMiddleware, getAllEvents);
+    router.get("/api/events/:id", authMiddleware, getEvent);
+    router.put("/api/events/:id", authMiddleware, updateEvent);
+    router.put("/api/events/:id/publish", authMiddleware, toggleEventPublish);
+    router.delete("/api/events/:id", authMiddleware, deleteEvent);
   }
 
   // Public routes (no auth required)

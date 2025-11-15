@@ -5,6 +5,7 @@ import { insertContactSchema, insertNewsletterSchema, insertIntegrationSettingSc
 import { fromError } from "zod-validation-error";
 import { createProvider } from "./providers";
 import bcrypt from "bcryptjs";
+import { registerEventRoutes } from "./routes/events";
 
 // Security middleware - Rate limiters
 // NOTE: Rate limiting disabled - using Cloudflare WAF instead
@@ -483,6 +484,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // ========================================================================
+  // MINDFIT V2 ROUTES REGISTRATION
+  // ========================================================================
+
+  // Register events routes (public + protected)
+  registerEventRoutes(app, requireAuth);
 
   const httpServer = createServer(app);
 
