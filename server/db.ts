@@ -1,6 +1,8 @@
 // Database connection setup using PostgreSQL (DigitalOcean Managed Database)
 // Switched from Neon serverless (WebSocket) to standard pg (TCP)
-import { Pool } from 'pg';
+// Using default import for pg CommonJS module (ESM compatibility)
+import pg from 'pg';
+const { Pool } = pg;
 import { drizzle } from 'drizzle-orm/node-postgres';
 import * as schema from "@shared/schema";
 
