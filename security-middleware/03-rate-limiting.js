@@ -10,7 +10,7 @@
  * npm install express-rate-limit
  *
  * USAGE:
- * import { loginLimiter, apiLimiter, strictLimiter } from './security-middleware/03-rate-limiting';
+ * const { loginLimiter, apiLimiter, strictLimiter } = require('./security-middleware/03-rate-limiting');
  *
  * // Apply to routes:
  * app.post('/api/admin/login', loginLimiter, loginHandler);
@@ -30,8 +30,8 @@ import rateLimit from 'express-rate-limit';
  * For Redis (recommended):
  * npm install rate-limit-redis ioredis
  *
- * import RedisStore from 'rate-limit-redis';
- * import Redis from 'ioredis';
+ * const RedisStore = require('rate-limit-redis');
+ * const Redis = require('ioredis');
  * const redis = new Redis(process.env.REDIS_URL);
  */
 
@@ -45,8 +45,14 @@ const loginLimiter = rateLimit({
   skipSuccessfulRequests: false, // Count successful logins
   skipFailedRequests: false, // Count failed logins
 
-  // Use standard key generator (IP-based, handles IPv6 correctly)
-  // Note: Username-specific limiting moved to application logic
+  // Trust first proxy (Cloudflare)
+  trustProxy: 1,
+
+  // Custom key generator - Rate limit by IP + username combination
+  keyGenerator: (req) => {
+    const username = req.body?.username || 'anonymous';
+    return `${req.ip}:${username}`;
+  },
 
   // Custom response handler
   handler: (req, res) => {
@@ -86,6 +92,9 @@ const apiLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute per IP
   message: 'Too many requests from this IP, please slow down',
+
+  // Trust first proxy (Cloudflare)
+  trustProxy: 1,
 
   handler: (req, res) => {
     console.warn('[SECURITY] API rate limit exceeded', {
@@ -129,6 +138,9 @@ const contactLimiter = rateLimit({
   max: 10, // 10 submissions per hour per IP
   message: 'Too many contact form submissions',
 
+  // Trust first proxy (Cloudflare)
+  trustProxy: 1,
+
   handler: (req, res) => {
     console.warn('[SECURITY] Contact form rate limit exceeded', {
       ip: req.ip,
@@ -156,6 +168,9 @@ const newsletterLimiter = rateLimit({
   max: 5, // 5 subscriptions per hour per IP
   message: 'Too many newsletter subscription attempts',
 
+  // Trust first proxy (Cloudflare)
+  trustProxy: 1,
+
   handler: (req, res) => {
     console.warn('[SECURITY] Newsletter rate limit exceeded', {
       ip: req.ip,
@@ -182,6 +197,9 @@ const strictLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3, // 3 attempts per hour
   message: 'Too many attempts for this sensitive operation',
+
+  // Trust first proxy (Cloudflare)
+  trustProxy: 1,
 
   handler: (req, res) => {
     console.error('[SECURITY] Strict rate limit exceeded - Potential attack', {
@@ -212,6 +230,9 @@ const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500, // 500 requests per 15 minutes per IP
   message: 'Too many requests from this IP address',
+
+  // Trust first proxy (Cloudflare)
+  trustProxy: 1,
 
   handler: (req, res) => {
     console.error('[SECURITY] Global rate limit exceeded - Possible attack', {
@@ -310,8 +331,8 @@ export {
  *
  * For multi-instance deployments, use Redis store:
  *
- * import RedisStore from 'rate-limit-redis';
- * import Redis from 'ioredis';
+ * const RedisStore = require('rate-limit-redis');
+ * const Redis = require('ioredis');
  *
  * const redis = new Redis({
  *   host: process.env.REDIS_HOST,
