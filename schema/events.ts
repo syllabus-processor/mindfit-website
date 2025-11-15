@@ -91,7 +91,8 @@ export const events = pgTable("events", {
 // VALIDATION SCHEMAS
 // ============================================================================
 
-export const insertEventSchema = createInsertSchema(events).omit({
+// Base schema without refinements (for partial updates)
+const baseEventSchema = createInsertSchema(events).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
@@ -125,12 +126,16 @@ export const insertEventSchema = createInsertSchema(events).omit({
   recurrenceRule: z.string().optional(),
   parentEventId: z.string().uuid().optional(),
   googleCalendarId: z.string().optional(),
-}).refine(
+});
+
+// Insert schema with validation refinements
+export const insertEventSchema = baseEventSchema.refine(
   (data) => data.endTime > data.startTime,
   { message: "End time must be after start time", path: ["endTime"] }
 );
 
-export const updateEventSchema = insertEventSchema.partial();
+// Update schema - partial version of base schema
+export const updateEventSchema = baseEventSchema.partial();
 
 // ============================================================================
 // TYPE EXPORTS
