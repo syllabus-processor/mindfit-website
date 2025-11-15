@@ -63,9 +63,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: { id: user.id, username: user.username }
       });
     } catch (error: any) {
-      res.status(500).json({ 
-        success: false, 
-        message: "Login failed" 
+      console.error("[LOGIN ERROR]", error);
+      res.status(500).json({
+        success: false,
+        message: "Login failed"
       });
     }
   });
@@ -171,9 +172,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: validationError.message 
         });
       }
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to send message. Please try again." 
+      console.error("[CONTACT FORM ERROR]", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to send message. Please try again."
       });
     }
   });
@@ -243,9 +245,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: validationError.message 
         });
       }
-      res.status(500).json({ 
-        success: false, 
-        message: "Failed to subscribe. Please try again." 
+      console.error("[NEWSLETTER ERROR]", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to subscribe. Please try again."
       });
     }
   });
