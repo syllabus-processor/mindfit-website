@@ -6,8 +6,9 @@ const app = express();
 
 // =============================================================================
 // TRUST PROXY - Required for correct client IP detection behind Cloudflare/DO proxy
+// Set to 1 to trust only the first proxy (Cloudflare)
 // =============================================================================
-app.set('trust proxy', true);
+app.set('trust proxy', 1);
 
 // =============================================================================
 // SECURITY MIDDLEWARE - APPLY IN THIS ORDER
