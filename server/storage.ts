@@ -45,7 +45,14 @@ export interface IStorage {
 
   createReferral(referral: InsertReferral, userId?: string): Promise<Referral>;
   getReferral(id: string): Promise<Referral | undefined>;
-  getAllReferrals(filters?: { status?: string; urgency?: string; search?: string }): Promise<Referral[]>;
+  getAllReferrals(filters?: {
+    status?: string;
+    clientState?: string;
+    workflowStatus?: string;
+    urgency?: string;
+    search?: string
+  }): Promise<Referral[]>;
+  getReferralsByState(clientState: string): Promise<Referral[]>;
   updateReferral(id: string, updates: UpdateReferral, userId?: string): Promise<Referral>;
   deleteReferral(id: string): Promise<void>;
 }
@@ -177,14 +184,31 @@ export class DatabaseStorage implements IStorage {
     return referral || undefined;
   }
 
-  async getAllReferrals(filters?: { status?: string; urgency?: string; search?: string }): Promise<Referral[]> {
+  async getAllReferrals(filters?: {
+    status?: string;
+    clientState?: string;
+    workflowStatus?: string;
+    urgency?: string;
+    search?: string
+  }): Promise<Referral[]> {
     let query = db.select().from(referrals);
 
     // Build WHERE conditions dynamically
     const conditions = [];
 
+    // Legacy status filter (backward compatibility)
     if (filters?.status) {
       conditions.push(eq(referrals.status, filters.status));
+    }
+
+    // NEW: Client state filter (high-level)
+    if (filters?.clientState) {
+      conditions.push(eq(referrals.clientState, filters.clientState));
+    }
+
+    // NEW: Workflow status filter (granular)
+    if (filters?.workflowStatus) {
+      conditions.push(eq(referrals.workflowStatus, filters.workflowStatus));
     }
 
     if (filters?.urgency) {
@@ -210,6 +234,15 @@ export class DatabaseStorage implements IStorage {
 
     // Order by created_at descending (most recent first)
     const results = await query.orderBy(desc(referrals.createdAt));
+    return results;
+  }
+
+  async getReferralsByState(clientState: string): Promise<Referral[]> {
+    const results = await db
+      .select()
+      .from(referrals)
+      .where(eq(referrals.clientState, clientState))
+      .orderBy(desc(referrals.createdAt));
     return results;
   }
 

@@ -76,7 +76,9 @@ export async function createReferral(req: Request, res: Response) {
  * List all referrals with optional filters
  *
  * Query params:
- *   - status: filter by status (e.g., "pending", "assigned")
+ *   - status: filter by legacy status (backward compat)
+ *   - clientState: filter by client state (prospective/pending/active/inactive)
+ *   - workflowStatus: filter by detailed workflow status
  *   - urgency: filter by urgency (e.g., "urgent", "routine")
  *   - search: search in name, email, concerns
  *
@@ -86,6 +88,8 @@ export async function getAllReferrals(req: Request, res: Response) {
   try {
     const filters = {
       status: req.query.status as string | undefined,
+      clientState: req.query.clientState as string | undefined,
+      workflowStatus: req.query.workflowStatus as string | undefined,
       urgency: req.query.urgency as string | undefined,
       search: req.query.search as string | undefined,
     };
@@ -358,6 +362,174 @@ export async function deleteReferral(req: Request, res: Response) {
   }
 }
 
+/**
+ * POST /api/referrals/:id/transition
+ * Transition referral workflow status (Phase 2 - Workflow System)
+ *
+ * Body: {
+ *   targetStatus: WorkflowStatus (e.g., "documents_received", "intake_completed"),
+ *   reason?: string (required for "declined" and "discharged" statuses)
+ * }
+ * Returns: { success: true, referral: {...} }
+ */
+export async function transitionReferralWorkflow(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { targetStatus, reason } = req.body;
+
+    if (!targetStatus) {
+      return res.status(400).json({
+        success: false,
+        message: "targetStatus is required",
+      });
+    }
+
+    // Get current referral
+    const currentReferral = await storage.getReferral(id);
+    if (!currentReferral) {
+      return res.status(404).json({
+        success: false,
+        message: "Referral not found",
+      });
+    }
+
+    // Import workflow validation logic
+    const {
+      getTransitionMetadata,
+      type WorkflowStatus,
+      type ClientState,
+    } = await import("../lib/workflow");
+
+    // Get transition metadata and validate
+    let metadata;
+    try {
+      metadata = getTransitionMetadata(
+        currentReferral.clientState as ClientState,
+        currentReferral.workflowStatus as WorkflowStatus,
+        targetStatus as WorkflowStatus,
+        reason
+      );
+    } catch (error: any) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    // Build updates object
+    const updates: any = {
+      clientState: metadata.newState,
+      workflowStatus: metadata.newStatus,
+      ...metadata.timestampUpdates,
+    };
+
+    // Handle reason fields
+    if (reason) {
+      if (metadata.requiresReason === "decline") {
+        updates.declineReason = reason;
+      } else if (metadata.requiresReason === "discharge") {
+        updates.dischargeReason = reason;
+      }
+    }
+
+    // Handle matching attempts increment
+    if (metadata.incrementMatchingAttempts) {
+      updates.matchingAttempts = (currentReferral.matchingAttempts || 0) + 1;
+    }
+
+    const userId = getUserId(req);
+
+    // Update referral
+    const updatedReferral = await storage.updateReferral(id, updates, userId);
+
+    res.json({
+      success: true,
+      message: `Referral transitioned to ${targetStatus}`,
+      referral: updatedReferral,
+    });
+  } catch (error: any) {
+    console.error("[TRANSITION WORKFLOW ERROR]", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to transition referral workflow",
+    });
+  }
+}
+
+/**
+ * GET /api/referrals/by-state/:state
+ * Get all referrals in a specific client state (Phase 2 - Workflow System)
+ *
+ * Params:
+ *   - state: "prospective" | "pending" | "active" | "inactive"
+ *
+ * Returns: { success: true, referrals: [...], count: number }
+ */
+export async function getReferralsByState(req: Request, res: Response) {
+  try {
+    const { state } = req.params;
+
+    const validStates = ["prospective", "pending", "active", "inactive"];
+    if (!validStates.includes(state)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid client state. Must be one of: ${validStates.join(", ")}`,
+      });
+    }
+
+    const referrals = await storage.getReferralsByState(state);
+
+    res.json({
+      success: true,
+      referrals,
+      count: referrals.length,
+    });
+  } catch (error: any) {
+    console.error("[GET REFERRALS BY STATE ERROR]", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch referrals by state",
+    });
+  }
+}
+
+/**
+ * GET /api/referrals/:id/next-statuses
+ * Get valid next workflow statuses for a referral (Phase 2 - Helper endpoint)
+ *
+ * Returns: { success: true, nextStatuses: [...] }
+ */
+export async function getNextStatuses(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const referral = await storage.getReferral(id);
+    if (!referral) {
+      return res.status(404).json({
+        success: false,
+        message: "Referral not found",
+      });
+    }
+
+    // Import workflow logic
+    const { getNextStatuses: getValidNextStatuses } = await import("../lib/workflow");
+
+    const nextStatuses = getValidNextStatuses(referral.workflowStatus as any);
+
+    res.json({
+      success: true,
+      currentStatus: referral.workflowStatus,
+      nextStatuses,
+    });
+  } catch (error: any) {
+    console.error("[GET NEXT STATUSES ERROR]", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch next statuses",
+    });
+  }
+}
+
 // ============================================================================
 // ROUTE REGISTRATION
 // ============================================================================
@@ -372,13 +544,22 @@ export function registerReferralRoutes(router: Router): void {
   // Create new referral
   router.post("/api/referrals", createReferral);
 
-  // List all referrals (with filters)
+  // List all referrals (with filters) - NOTE: Must come BEFORE /api/referrals/:id
   router.get("/api/referrals", getAllReferrals);
 
-  // Get single referral
+  // NEW: Get referrals by client state (Phase 2)
+  router.get("/api/referrals/by-state/:state", getReferralsByState);
+
+  // Get single referral - NOTE: Must come AFTER /api/referrals/by-state/:state
   router.get("/api/referrals/:id", getReferral);
 
-  // Update referral status
+  // NEW: Get valid next workflow statuses (Phase 2)
+  router.get("/api/referrals/:id/next-statuses", getNextStatuses);
+
+  // NEW: Transition workflow status (Phase 2)
+  router.post("/api/referrals/:id/transition", transitionReferralWorkflow);
+
+  // Update referral status (legacy)
   router.put("/api/referrals/:id/status", updateReferralStatus);
 
   // Assign therapist/supervisor
