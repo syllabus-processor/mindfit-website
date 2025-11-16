@@ -523,6 +523,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register migration routes (admin only)
   registerMigrationRoutes(app, requireAuth);
 
+  // Register automation routes (admin only) - Phase 2
+  const automationRoutes = await import("./routes/automation");
+  app.post("/api/automation/run-transitions", requireAuth, automationRoutes.runTransitionsManually);
+  app.post("/api/automation/check-sla", requireAuth, automationRoutes.checkSLAManually);
+  app.post("/api/automation/send-document-reminders", requireAuth, automationRoutes.sendDocumentRemindersManually);
+  app.get("/api/automation/status", requireAuth, automationRoutes.getAutomationStatus);
+  console.log("✅ Automation routes registered (Phase 2)");
+
   const httpServer = createServer(app);
 
   return httpServer;
