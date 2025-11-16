@@ -583,21 +583,212 @@ export async function getNextStatuses(req: Request, res: Response) {
       });
     }
 
-    // Import workflow logic
-    const { getNextStatuses: getValidNextStatuses } = await import("../lib/workflow");
+    // Import NEW workflow validator (Phase 2.5 - UI Integration)
+    const { getAllowedNextStatuses, getStatusLabel } = await import("../lib/workflow-validator");
 
-    const nextStatuses = getValidNextStatuses(referral.workflowStatus as any);
+    const nextStatuses = getAllowedNextStatuses(referral.workflowStatus as WorkflowStatus);
+
+    // Include human-readable labels for UI
+    const statusesWithLabels = nextStatuses.map(status => ({
+      value: status,
+      label: getStatusLabel(status),
+    }));
 
     res.json({
       success: true,
       currentStatus: referral.workflowStatus,
-      nextStatuses,
+      currentLabel: getStatusLabel(referral.workflowStatus as WorkflowStatus),
+      nextStatuses: statusesWithLabels,
     });
   } catch (error: any) {
     console.error("[GET NEXT STATUSES ERROR]", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch next statuses",
+    });
+  }
+}
+
+/**
+ * GET /api/referrals/:id/timeline
+ * Get workflow timeline for a referral (Phase 2.5 - UI Integration)
+ * Constructs timeline from timestamp fields in referral record
+ *
+ * Returns: { success: true, timeline: [...] }
+ */
+export async function getReferralTimeline(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const referral = await storage.getReferral(id);
+    if (!referral) {
+      return res.status(404).json({
+        success: false,
+        message: "Referral not found",
+      });
+    }
+
+    // Build timeline from timestamp fields
+    const timeline: Array<{
+      timestamp: Date;
+      event: string;
+      phase: string;
+      details?: string;
+    }> = [];
+
+    // Always include creation
+    timeline.push({
+      timestamp: referral.createdAt,
+      event: "Referral Created",
+      phase: "referral",
+      details: `Submitted by ${referral.createdBy || "client"}`,
+    });
+
+    // Referral Phase
+    if (referral.reviewedAt) {
+      timeline.push({
+        timestamp: referral.reviewedAt,
+        event: "Under Review",
+        phase: "referral",
+      });
+    }
+    if (referral.documentsReceivedAt) {
+      timeline.push({
+        timestamp: referral.documentsReceivedAt,
+        event: "Documents Received",
+        phase: "referral",
+      });
+    }
+    if (referral.insuranceVerifiedAt) {
+      timeline.push({
+        timestamp: referral.insuranceVerifiedAt,
+        event: "Insurance Verified",
+        phase: "referral",
+      });
+    }
+
+    // Pre-Staging Phase
+    if (referral.preStageStartedAt) {
+      timeline.push({
+        timestamp: referral.preStageStartedAt,
+        event: "Pre-Staging Started",
+        phase: "pre_staging",
+      });
+    }
+    if (referral.preStageCompletedAt) {
+      timeline.push({
+        timestamp: referral.preStageCompletedAt,
+        event: "Pre-Staging Complete",
+        phase: "pre_staging",
+      });
+    }
+
+    // Staging Phase
+    if (referral.stageStartedAt) {
+      timeline.push({
+        timestamp: referral.stageStartedAt,
+        event: "Staging Started",
+        phase: "staging",
+      });
+    }
+    if (referral.stageCompletedAt) {
+      timeline.push({
+        timestamp: referral.stageCompletedAt,
+        event: "Staging Complete",
+        phase: "staging",
+      });
+    }
+
+    // Assignment Phase
+    if (referral.assignmentStartedAt) {
+      timeline.push({
+        timestamp: referral.assignmentStartedAt,
+        event: "Assignment Proposed",
+        phase: "assignment",
+        details: referral.assignedTherapist ? `Matched with ${referral.assignedTherapist}` : undefined,
+      });
+    }
+    if (referral.assignmentCompletedAt) {
+      timeline.push({
+        timestamp: referral.assignmentCompletedAt,
+        event: "Assignment Accepted",
+        phase: "assignment",
+      });
+    }
+
+    // Acceptance/Intake Phase
+    if (referral.acceptanceStartedAt) {
+      timeline.push({
+        timestamp: referral.acceptanceStartedAt,
+        event: "Intake Scheduled",
+        phase: "acceptance",
+      });
+    }
+    if (referral.intakeCompletedAt) {
+      timeline.push({
+        timestamp: referral.intakeCompletedAt,
+        event: "Intake Completed",
+        phase: "acceptance",
+      });
+    }
+
+    // Treatment Phase
+    if (referral.firstSessionAt) {
+      timeline.push({
+        timestamp: referral.firstSessionAt,
+        event: "First Session",
+        phase: "treatment",
+      });
+    }
+    if (referral.lastSessionAt) {
+      timeline.push({
+        timestamp: referral.lastSessionAt,
+        event: "Last Session",
+        phase: "treatment",
+      });
+    }
+
+    // Terminal Events
+    if (referral.completedAt) {
+      timeline.push({
+        timestamp: referral.completedAt,
+        event: "Treatment Complete",
+        phase: "completion",
+      });
+    }
+    if (referral.dischargedAt) {
+      timeline.push({
+        timestamp: referral.dischargedAt,
+        event: "Discharged",
+        phase: "completion",
+        details: referral.dischargeReason || undefined,
+      });
+    }
+    if (referral.declineReason) {
+      timeline.push({
+        timestamp: referral.lastModifiedAt || referral.createdAt,
+        event: "Declined",
+        phase: "completion",
+        details: referral.declineReason,
+      });
+    }
+
+    // Sort timeline by timestamp (oldest first)
+    timeline.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+
+    res.json({
+      success: true,
+      referralId: referral.id,
+      clientName: referral.clientName,
+      currentState: referral.clientState,
+      currentStatus: referral.workflowStatus,
+      timeline,
+    });
+  } catch (error: any) {
+    console.error("[GET REFERRAL TIMELINE ERROR]", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch referral timeline",
     });
   }
 }
@@ -627,6 +818,9 @@ export function registerReferralRoutes(router: Router): void {
 
   // NEW: Get valid next workflow statuses (Phase 2)
   router.get("/api/referrals/:id/next-statuses", getNextStatuses);
+
+  // NEW: Get workflow timeline (Phase 2.5 - UI Integration)
+  router.get("/api/referrals/:id/timeline", getReferralTimeline);
 
   // NEW: Transition workflow status (Phase 2)
   router.post("/api/referrals/:id/transition", transitionReferralWorkflow);
