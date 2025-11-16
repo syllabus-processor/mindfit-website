@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, MessageSquare, Users, Settings, Menu, FileText } from "lucide-react";
+import { LogOut, LayoutDashboard, MessageSquare, Users, Settings, Menu, FileText, Home } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,10 +42,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/me"] });
-      setLocation("/admin/login");
+      setLocation("/");
       toast({
         title: "Logged out",
-        description: "You've been successfully logged out",
+        description: "You've been successfully logged out. Returning to homepage.",
       });
     },
   });
@@ -135,16 +135,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 ))}
               </nav>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => logoutMutation.mutate()}
-              disabled={logoutMutation.isPending}
-              data-testid="button-logout"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link href="/">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  data-testid="button-back-to-website"
+                >
+                  <Home className="h-4 w-4 mr-2" />
+                  <span className="hidden lg:inline">Back to Website</span>
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>

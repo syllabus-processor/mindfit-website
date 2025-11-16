@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Lock, User } from "lucide-react";
+import { Lock, User, ArrowLeft } from "lucide-react";
+import { Link } from "wouter";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -125,8 +126,18 @@ export default function AdminLogin() {
             </form>
           </Form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>For technical support, contact your administrator</p>
+          <div className="mt-6 space-y-4">
+            <div className="text-center">
+              <Link href="/">
+                <Button variant="ghost" className="text-sm" data-testid="button-back-to-website">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Website
+                </Button>
+              </Link>
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              <p>For technical support, contact your administrator</p>
+            </div>
           </div>
         </CardContent>
       </Card>
