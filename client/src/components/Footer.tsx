@@ -170,16 +170,29 @@ export default function Footer() {
           <p className="text-sm text-[hsl(210,15%,70%)]">
             © {new Date().getFullYear()} MindFit Mental Health. All rights reserved.
           </p>
-          
-          {/* Discreet Portal Access */}
-          <Link 
-            href="/portal/login" 
-            className="flex items-center gap-2 text-sm text-[hsl(210,15%,60%)] hover:text-[hsl(210,15%,80%)] transition-colors"
-            data-testid="link-portal-access"
-          >
-            <Lock className="h-3 w-3" />
-            <span>Staff & Client Access</span>
-          </Link>
+
+          {/* Discreet Portal Access - Two Logins */}
+          <div className="flex items-center gap-6">
+            <Link
+              href="/admin/login"
+              className="flex items-center gap-2 text-sm text-[hsl(210,15%,60%)] hover:text-[hsl(210,15%,80%)] transition-colors"
+              data-testid="link-mindfit-staff"
+            >
+              <Lock className="h-3 w-3" />
+              <span>MindFit Staff</span>
+            </Link>
+
+            <div className="h-4 w-px bg-white/10" />
+
+            <Link
+              href="/portal/login"
+              className="flex items-center gap-2 text-sm text-[hsl(210,15%,60%)] hover:text-[hsl(210,15%,80%)] transition-colors"
+              data-testid="link-ema-portal"
+            >
+              <Lock className="h-3 w-3" />
+              <span>EMA Staff & Clients</span>
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
