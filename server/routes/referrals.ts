@@ -11,6 +11,7 @@ import {
   notifyTherapistAssignment,
   notifyReferralStatusChange,
 } from "../lib/notifications";
+import type { WorkflowStatus, ClientState } from "../lib/workflow";
 
 // ============================================================================
 // MIDDLEWARE
@@ -394,11 +395,7 @@ export async function transitionReferralWorkflow(req: Request, res: Response) {
     }
 
     // Import workflow validation logic
-    const {
-      getTransitionMetadata,
-      type WorkflowStatus,
-      type ClientState,
-    } = await import("../lib/workflow");
+    const { getTransitionMetadata } = await import("../lib/workflow");
 
     // Get transition metadata and validate
     let metadata;

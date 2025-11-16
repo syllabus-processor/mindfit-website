@@ -102,6 +102,13 @@ app.use((req, res, next) => {
   console.log('🔴 Live Telemetry WebSocket Dashboard: ONLINE');
 
   // =============================================================================
+  // WORKFLOW AUTOMATION SCHEDULER - Phase 2
+  // =============================================================================
+  const { startScheduler } = await import("./lib/scheduler");
+  startScheduler();
+  console.log('⚙️  Workflow Automation Scheduler: ACTIVE');
+
+  // =============================================================================
   // MARP v1 - Auto Admin Seeding
   // =============================================================================
   console.log('🔄 MARP: Checking admin user status...');

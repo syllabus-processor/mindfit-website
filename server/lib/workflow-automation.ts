@@ -81,8 +81,8 @@ export async function checkAutoTransitions(referral: Referral): Promise<boolean>
         );
 
         const metadata = getTransitionMetadata(
-          referral.clientState,
-          referral.workflowStatus,
+          referral.clientState as ClientState,
+          referral.workflowStatus as WorkflowStatus,
           rule.targetStatus,
           rule.reason
         );
@@ -189,8 +189,8 @@ export function checkSLAViolations(referral: Referral): SLAViolation[] {
   if (referral.clientState === "inactive") return violations;
 
   // Pre-Staging Phase SLA
-  if (referral.clientState === "prospective" && referral.prestageStartedAt) {
-    const days = daysSince(referral.prestageStartedAt);
+  if (referral.clientState === "prospective" && referral.preStageStartedAt) {
+    const days = daysSince(referral.preStageStartedAt);
     if (days !== null && days > SLA_TARGETS.preStaging) {
       violations.push({
         referralId: referral.id,

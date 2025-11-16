@@ -13,6 +13,7 @@ import {
   createSLAViolationEmail,
   sendBatchEmails,
 } from "../lib/workflow-notifications";
+import { getJobStatuses } from "../lib/scheduler";
 
 // ============================================================================
 // MANUAL JOB TRIGGERS (Admin-only endpoints)
@@ -122,28 +123,12 @@ export async function sendDocumentRemindersManually(req: Request, res: Response)
  */
 export async function getAutomationStatus(req: Request, res: Response) {
   try {
-    // This would typically read from a status tracking table/redis
-    // For now, return a simple status
+    const jobStatuses = getJobStatuses();
+
     res.json({
       success: true,
       status: "active",
-      jobs: {
-        autoTransitions: {
-          enabled: true,
-          schedule: "Every 15 minutes",
-          lastRun: null, // TODO: Track last run time
-        },
-        slaMonitoring: {
-          enabled: true,
-          schedule: "Every hour",
-          lastRun: null,
-        },
-        documentReminders: {
-          enabled: true,
-          schedule: "Daily at 9:00 AM",
-          lastRun: null,
-        },
-      },
+      jobs: jobStatuses,
     });
   } catch (error: any) {
     console.error("[API] Failed to get automation status:", error);
