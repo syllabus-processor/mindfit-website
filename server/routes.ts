@@ -38,31 +38,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/login", async (req, res) => {
     try {
       const { username, password } = req.body;
-      
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Invalid username or password" 
+
+      // Query admin_users table (v2 schema) for admin authentication
+      const adminUser = await storage.getAdminUserByUsername(username);
+
+      if (!adminUser) {
+        return res.status(401).json({
+          success: false,
+          message: "Invalid username or password"
         });
       }
 
-      const isValid = await bcrypt.compare(password, user.password);
-      
+      // Check if admin account is active
+      if (!adminUser.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: "Account is disabled"
+        });
+      }
+
+      const isValid = await bcrypt.compare(password, adminUser.passwordHash);
+
       if (!isValid) {
-        return res.status(401).json({ 
-          success: false, 
-          message: "Invalid username or password" 
+        return res.status(401).json({
+          success: false,
+          message: "Invalid username or password"
         });
       }
 
-      req.session.userId = user.id;
-      
-      res.json({ 
-        success: true, 
+      req.session.userId = adminUser.id;
+
+      res.json({
+        success: true,
         message: "Login successful",
-        user: { id: user.id, username: user.username }
+        user: { id: adminUser.id, username: adminUser.username }
       });
     } catch (error: any) {
       console.error("[LOGIN ERROR]", error);

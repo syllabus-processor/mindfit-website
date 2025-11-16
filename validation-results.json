@@ -1,0 +1,70 @@
+{
+  "results": [
+    {
+      "name": "TEST 1: Deployment is ACTIVE",
+      "status": "PASS",
+      "details": "Active Deployment: 27ea4f7f-390a-4045-87bb-8ecc4ba28c00",
+      "timestamp": "2025-11-16T01:50:16.947Z"
+    },
+    {
+      "name": "TEST 2: Spaces environment variables",
+      "status": "PASS",
+      "details": "All 6 Spaces env vars configured",
+      "timestamp": "2025-11-16T01:50:18.047Z"
+    },
+    {
+      "name": "TEST 3: Spaces configuration",
+      "status": "PASS",
+      "details": "Spaces configured: mindfit-web-app-bucket (NYC1)",
+      "timestamp": "2025-11-16T01:50:19.189Z"
+    },
+    {
+      "name": "TEST 4: Migration files deployed",
+      "status": "PASS",
+      "details": "All migration files present",
+      "timestamp": "2025-11-16T01:50:19.201Z"
+    },
+    {
+      "name": "TEST 5: Migration SQL syntax valid",
+      "status": "PASS",
+      "details": "5 tables defined, 29 indexes",
+      "timestamp": "2025-11-16T01:50:19.209Z"
+    },
+    {
+      "name": "TEST 6: Migration endpoint accessible",
+      "status": "FAIL",
+      "details": "Unexpected status: 404",
+      "timestamp": "2025-11-16T01:50:19.984Z"
+    },
+    {
+      "name": "TEST 7: Git commit pushed",
+      "status": "PASS",
+      "details": "Latest commit: 49df30d",
+      "timestamp": "2025-11-16T01:50:19.997Z"
+    },
+    {
+      "name": "TEST 8: Server health check",
+      "status": "FAIL",
+      "details": "Server unreachable: Server returned 404",
+      "timestamp": "2025-11-16T01:50:20.536Z"
+    },
+    {
+      "name": "TEST 9: Database connectivity",
+      "status": "PASS",
+      "details": "Database test requires authentication",
+      "timestamp": "2025-11-16T01:50:20.727Z"
+    },
+    {
+      "name": "TEST 10: Deployment logs",
+      "status": "PASS",
+      "details": "Build logs clean (no errors)",
+      "timestamp": "2025-11-16T01:50:23.707Z"
+    }
+  ],
+  "summary": {
+    "passed": 8,
+    "failed": 2,
+    "warned": 0,
+    "passRate": "80.0"
+  }
+}

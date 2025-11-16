@@ -153,3 +153,13 @@ export type InsertIntegrationSetting = z.infer<typeof insertIntegrationSettingSc
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type UpdateReferral = z.infer<typeof updateReferralSchema>;
 export type Referral = typeof referrals.$inferSelect;
+
+// ============================================================================
+// MindFit v2 Schema Exports - Admin Users
+// ============================================================================
+export {
+  adminUsers,
+  type AdminUser,
+  type InsertAdminUser,
+  loginSchema,
+} from "../schema/admin_users";

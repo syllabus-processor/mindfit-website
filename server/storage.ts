@@ -12,11 +12,13 @@ import {
   type Referral,
   type InsertReferral,
   type UpdateReferral,
+  type AdminUser,
   users,
   contactSubmissions,
   newsletterSubscribers,
   integrationSettings,
   referrals,
+  adminUsers,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, desc, and, or, like } from "drizzle-orm";
@@ -25,6 +27,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+
+  // Admin Users
+  getAdminUserByUsername(username: string): Promise<AdminUser | undefined>;
 
   createContactSubmission(contact: InsertContact): Promise<ContactSubmission>;
   getAllContactSubmissions(): Promise<ContactSubmission[]>;
@@ -61,6 +66,15 @@ export class DatabaseStorage implements IStorage {
       .values(insertUser)
       .returning();
     return user;
+  }
+
+  // ============================================================================
+  // ADMIN USERS - v2 Schema
+  // ============================================================================
+
+  async getAdminUserByUsername(username: string): Promise<AdminUser | undefined> {
+    const [adminUser] = await db.select().from(adminUsers).where(eq(adminUsers.username, username));
+    return adminUser || undefined;
   }
 
   async createContactSubmission(contact: InsertContact): Promise<ContactSubmission> {
