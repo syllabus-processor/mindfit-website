@@ -439,6 +439,16 @@ export async function transitionReferralWorkflow(req: Request, res: Response) {
     // Update referral
     const updatedReferral = await storage.updateReferral(id, updates, userId);
 
+    // Send email notifications asynchronously (fire and forget)
+    sendTransitionNotification(
+      currentReferral,
+      updatedReferral,
+      metadata
+    ).catch((error) => {
+      console.error("[TRANSITION NOTIFICATION ERROR]", error);
+      // Don't fail the transition if email fails
+    });
+
     res.json({
       success: true,
       message: `Referral transitioned to ${targetStatus}`,
@@ -450,6 +460,71 @@ export async function transitionReferralWorkflow(req: Request, res: Response) {
       success: false,
       message: "Failed to transition referral workflow",
     });
+  }
+}
+
+/**
+ * Send appropriate email notification based on workflow transition
+ */
+async function sendTransitionNotification(
+  oldReferral: any,
+  newReferral: any,
+  metadata: any
+): Promise<void> {
+  const {
+    createStateChangeEmail,
+    createAssignmentProposedEmail,
+    createIntakeScheduledEmail,
+    createFirstSessionScheduledEmail,
+    sendEmail,
+  } = await import("../lib/workflow-notifications");
+
+  // State change notification
+  if (oldReferral.clientState !== newReferral.clientState) {
+    const email = createStateChangeEmail(
+      newReferral,
+      oldReferral.clientState,
+      newReferral.clientState
+    );
+    await sendEmail(email);
+  }
+
+  // Assignment proposed notification
+  if (
+    newReferral.workflowStatus === "assignment_proposed" &&
+    oldReferral.workflowStatus !== "assignment_proposed"
+  ) {
+    const email = createAssignmentProposedEmail(
+      newReferral,
+      newReferral.assignedTherapist || "Your assigned therapist"
+    );
+    await sendEmail(email);
+  }
+
+  // Intake scheduled notification
+  if (
+    newReferral.workflowStatus === "intake_scheduled" &&
+    oldReferral.workflowStatus !== "intake_scheduled" &&
+    newReferral.intakeScheduledAt
+  ) {
+    const email = createIntakeScheduledEmail(
+      newReferral,
+      new Date(newReferral.intakeScheduledAt)
+    );
+    await sendEmail(email);
+  }
+
+  // First session scheduled notification
+  if (
+    newReferral.workflowStatus === "waiting_first_session" &&
+    oldReferral.workflowStatus !== "waiting_first_session" &&
+    newReferral.firstSessionAt
+  ) {
+    const email = createFirstSessionScheduledEmail(
+      newReferral,
+      new Date(newReferral.firstSessionAt)
+    );
+    await sendEmail(email);
   }
 }
 
