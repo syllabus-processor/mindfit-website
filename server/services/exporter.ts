@@ -303,13 +303,13 @@ export function validateExportPrerequisites(): {
 
   // Check Spaces configuration
   const spacesEndpoint = process.env.SPACES_ENDPOINT;
-  const spacesKey = process.env.SPACES_KEY;
-  const spacesSecret = process.env.SPACES_SECRET;
+  const spacesKey = process.env.SPACES_ACCESS_KEY_ID;
+  const spacesSecret = process.env.SPACES_SECRET_ACCESS_KEY;
   const spacesBucket = process.env.SPACES_BUCKET;
 
   if (!spacesEndpoint) errors.push("SPACES_ENDPOINT not set");
-  if (!spacesKey) errors.push("SPACES_KEY not set");
-  if (!spacesSecret) errors.push("SPACES_SECRET not set");
+  if (!spacesKey) errors.push("SPACES_ACCESS_KEY_ID not set");
+  if (!spacesSecret) errors.push("SPACES_SECRET_ACCESS_KEY not set");
   if (!spacesBucket) errors.push("SPACES_BUCKET not set");
 
   return {
@@ -330,8 +330,8 @@ export function getExportStatus() {
     prerequisites: {
       masterKey: process.env.MINDV2_AES_KEY ? "✅ Configured" : "❌ Missing",
       spacesEndpoint: process.env.SPACES_ENDPOINT ? "✅ Configured" : "❌ Missing",
-      spacesKey: process.env.SPACES_KEY ? "✅ Configured" : "❌ Missing",
-      spacesSecret: process.env.SPACES_SECRET ? "✅ Configured" : "❌ Missing",
+      spacesKey: process.env.SPACES_ACCESS_KEY_ID ? "✅ Configured" : "❌ Missing",
+      spacesSecret: process.env.SPACES_SECRET_ACCESS_KEY ? "✅ Configured" : "❌ Missing",
       spacesBucket: process.env.SPACES_BUCKET || "mindfit-intake-packages-prod",
     },
     errors: validation.errors,
@@ -348,8 +348,8 @@ export function getExportStatus() {
  * ✅ Environment Variables Required:
  *    MINDV2_AES_KEY=<64-char hex string (32 bytes)>
  *    SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com
- *    SPACES_KEY=<your_access_key>
- *    SPACES_SECRET=<your_secret_key>
+ *    SPACES_ACCESS_KEY_ID=<your_access_key>
+ *    SPACES_SECRET_ACCESS_KEY=<your_secret_key>
  *    SPACES_BUCKET=mindfit-intake-packages-prod
  *
  * ✅ Generate Master Key:

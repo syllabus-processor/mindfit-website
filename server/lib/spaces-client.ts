@@ -16,18 +16,18 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const SPACES_CONFIG = {
   endpoint: process.env.SPACES_ENDPOINT || "",
-  accessKeyId: process.env.SPACES_KEY || "",
-  secretAccessKey: process.env.SPACES_SECRET || "",
+  accessKeyId: process.env.SPACES_ACCESS_KEY_ID || "",
+  secretAccessKey: process.env.SPACES_SECRET_ACCESS_KEY || "",
   bucket: process.env.SPACES_BUCKET || "mindfit-intake-packages-prod",
-  region: "us-east-1", // DigitalOcean Spaces uses us-east-1 for all regions
+  region: process.env.SPACES_REGION || "us-east-1", // DigitalOcean Spaces region
 };
 
 // Validate configuration on module load
 function validateConfig(): boolean {
   const missing = [];
   if (!SPACES_CONFIG.endpoint) missing.push("SPACES_ENDPOINT");
-  if (!SPACES_CONFIG.accessKeyId) missing.push("SPACES_KEY");
-  if (!SPACES_CONFIG.secretAccessKey) missing.push("SPACES_SECRET");
+  if (!SPACES_CONFIG.accessKeyId) missing.push("SPACES_ACCESS_KEY_ID");
+  if (!SPACES_CONFIG.secretAccessKey) missing.push("SPACES_SECRET_ACCESS_KEY");
 
   if (missing.length > 0) {
     console.error(`❌ Missing DO Spaces configuration: ${missing.join(", ")}`);
@@ -53,7 +53,7 @@ let s3Client: S3Client | null = null;
 function getClient(): S3Client {
   if (!isConfigured) {
     throw new Error(
-      "DigitalOcean Spaces not configured. Set SPACES_ENDPOINT, SPACES_KEY, SPACES_SECRET environment variables."
+      "DigitalOcean Spaces not configured. Set SPACES_ENDPOINT, SPACES_ACCESS_KEY_ID, SPACES_SECRET_ACCESS_KEY environment variables."
     );
   }
 
@@ -331,8 +331,8 @@ export function isPackageExpired(key: string): boolean {
  *
  * ✅ Environment Variables Required:
  *    SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com
- *    SPACES_KEY=<your_access_key>
- *    SPACES_SECRET=<your_secret_key>
+ *    SPACES_ACCESS_KEY_ID=<your_access_key>
+ *    SPACES_SECRET_ACCESS_KEY=<your_secret_key>
  *    SPACES_BUCKET=mindfit-intake-packages-prod
  *
  * ✅ Bucket Configuration:
