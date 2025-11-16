@@ -92,6 +92,16 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
 
   // =============================================================================
+  // LIVE TELEMETRY - WebSocket Server + System Metrics
+  // =============================================================================
+  const { initWebSocketServer } = await import("./ws/websocketServer");
+  const { startSystemMetricsStream } = await import("./ws/systemMetrics");
+
+  initWebSocketServer(server);
+  startSystemMetricsStream();
+  console.log('🔴 Live Telemetry WebSocket Dashboard: ONLINE');
+
+  // =============================================================================
   // MARP v1 - Auto Admin Seeding
   // =============================================================================
   console.log('🔄 MARP: Checking admin user status...');

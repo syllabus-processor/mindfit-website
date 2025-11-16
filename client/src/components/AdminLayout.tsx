@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, MessageSquare, Users, Settings, Menu, FileText } from "lucide-react";
+import { LogOut, LayoutDashboard, MessageSquare, Users, Settings, Menu, FileText, Activity } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -109,6 +109,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: "/admin/contacts", label: "Contact Submissions", icon: MessageSquare },
     { href: "/admin/subscribers", label: "Newsletter Subscribers", icon: Users },
     { href: "/admin/integrations", label: "Integration Settings", icon: Settings },
+    { href: "/admin/live", label: "Live Telemetry", icon: Activity },
   ];
 
   return (
