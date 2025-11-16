@@ -50,18 +50,47 @@ export const referrals = pgTable("referrals", {
   // Referral Metadata
   referralSource: varchar("referral_source", { length: 255 }),
   referralNotes: text("referral_notes"),
-  // Workflow Status
+
+  // NEW: Dual-layer workflow tracking
+  clientState: varchar("client_state", { length: 20 }).notNull().default("prospective"),
+  workflowStatus: varchar("workflow_status", { length: 50 }).notNull().default("referral_submitted"),
+
+  // DEPRECATED: Legacy status field (kept for backward compatibility)
   status: varchar("status", { length: 50 }).notNull().default("pending"),
+
   // Assignment Tracking
   assignedTherapist: varchar("assigned_therapist", { length: 255 }),
   assignedSupervisor: varchar("assigned_supervisor", { length: 255 }),
   assignmentNotes: text("assignment_notes"),
-  // Timestamps
+
+  // NEW: Workflow phase timestamps
+  preStageStartedAt: timestamp("prestage_started_at"),
+  preStageCompletedAt: timestamp("prestage_completed_at"),
+  stageStartedAt: timestamp("stage_started_at"),
+  stageCompletedAt: timestamp("stage_completed_at"),
+  assignmentStartedAt: timestamp("assignment_started_at"),
+  assignmentCompletedAt: timestamp("assignment_completed_at"),
+  acceptanceStartedAt: timestamp("acceptance_started_at"),
+  acceptanceCompletedAt: timestamp("acceptance_completed_at"),
+  intakeCompletedAt: timestamp("intake_completed_at"),
+  firstSessionAt: timestamp("first_session_at"),
+  lastSessionAt: timestamp("last_session_at"),
+  dischargedAt: timestamp("discharged_at"),
+
+  // NEW: Additional workflow tracking
+  documentsReceivedAt: timestamp("documents_received_at"),
+  insuranceVerifiedAt: timestamp("insurance_verified_at"),
+  matchingAttempts: integer("matching_attempts").default(0),
+  declineReason: text("decline_reason"),
+  dischargeReason: text("discharge_reason"),
+
+  // Timestamps (legacy)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   reviewedAt: timestamp("reviewed_at"),
   assignedAt: timestamp("assigned_at"),
   exportedAt: timestamp("exported_at"),
   completedAt: timestamp("completed_at"),
+
   // Audit Trail
   createdBy: varchar("created_by").references(() => users.id),
   lastModifiedBy: varchar("last_modified_by").references(() => users.id),
@@ -117,6 +146,20 @@ export const insertReferralSchema = createInsertSchema(referrals).omit({
   createdBy: true,
   lastModifiedBy: true,
   lastModifiedAt: true,
+  preStageStartedAt: true,
+  preStageCompletedAt: true,
+  stageStartedAt: true,
+  stageCompletedAt: true,
+  assignmentStartedAt: true,
+  assignmentCompletedAt: true,
+  acceptanceStartedAt: true,
+  acceptanceCompletedAt: true,
+  intakeCompletedAt: true,
+  firstSessionAt: true,
+  lastSessionAt: true,
+  dischargedAt: true,
+  documentsReceivedAt: true,
+  insuranceVerifiedAt: true,
 }).extend({
   clientName: z.string().min(2, "Client name must be at least 2 characters"),
   clientEmail: z.string().email("Please enter a valid email address"),
@@ -130,14 +173,40 @@ export const insertReferralSchema = createInsertSchema(referrals).omit({
   insuranceMemberId: z.string().optional(),
   referralSource: z.string().optional(),
   referralNotes: z.string().optional(),
+
+  // NEW: Dual-layer workflow tracking
+  clientState: z.enum(["prospective", "pending", "active", "inactive"]).default("prospective"),
+  workflowStatus: z.enum([
+    // Pre-Staging statuses
+    "referral_submitted", "documents_requested", "documents_received", "insurance_verification_pending",
+    "insurance_verified", "insurance_verification_failed", "pre_stage_review",
+    // Staging statuses
+    "ready_for_assignment", "matching_in_progress", "therapist_identified",
+    // Assignment statuses
+    "assignment_pending", "assignment_offered", "assignment_accepted", "assignment_declined",
+    // Acceptance statuses
+    "client_contacted", "intake_scheduled", "intake_completed", "waiting_first_session",
+    // Active treatment statuses
+    "in_treatment", "treatment_on_hold", "treatment_resumed",
+    // Completion statuses
+    "discharge_pending", "discharged", "referred_out", "declined", "cancelled"
+  ]).default("referral_submitted"),
+
+  // DEPRECATED: Legacy status field (kept for backward compatibility)
   status: z.enum([
     "pending", "under_review", "assigned", "contacted",
     "scheduled", "in_progress", "exported", "completed",
     "declined", "cancelled"
   ]).default("pending"),
+
   assignedTherapist: z.string().optional(),
   assignedSupervisor: z.string().optional(),
   assignmentNotes: z.string().optional(),
+
+  // NEW: Additional workflow tracking
+  matchingAttempts: z.number().int().min(0).default(0).optional(),
+  declineReason: z.string().optional(),
+  dischargeReason: z.string().optional(),
 });
 
 export const updateReferralSchema = insertReferralSchema.partial();
