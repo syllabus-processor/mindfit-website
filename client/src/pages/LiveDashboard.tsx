@@ -44,19 +44,35 @@ export default function LiveDashboard() {
   };
 
   // Connect to WebSocket with token authentication
-  const connectWebSocket = () => {
-    // Get token from environment variable
-    const wsToken = import.meta.env.VITE_WS_DASHBOARD_TOKEN || "dev-token-12345";
+  const connectWebSocket = async () => {
+    try {
+      // Fetch WebSocket token from API (requires authentication)
+      const tokenRes = await fetch("/api/admin/ws-token", {
+        credentials: "include",
+      });
 
-    // Determine WebSocket URL based on environment
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}?token=${wsToken}`;
+      if (!tokenRes.ok) {
+        console.error("[LiveDashboard] Failed to get WebSocket token");
+        return;
+      }
 
-    console.log("[LiveDashboard] Connecting to WebSocket...");
+      const tokenData = await tokenRes.json();
+      const wsToken = tokenData.token;
 
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
+      if (!wsToken) {
+        console.error("[LiveDashboard] No WebSocket token received");
+        return;
+      }
+
+      // Determine WebSocket URL based on environment
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const host = window.location.host;
+      const wsUrl = `${protocol}//${host}?token=${wsToken}`;
+
+      console.log("[LiveDashboard] Connecting to WebSocket...");
+
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
     ws.onopen = () => {
       console.log("[LiveDashboard] WebSocket connected");
@@ -85,17 +101,24 @@ export default function LiveDashboard() {
       console.error("[LiveDashboard] WebSocket error:", error);
     };
 
-    ws.onclose = () => {
-      console.log("[LiveDashboard] WebSocket disconnected");
-      setConnected(false);
-      wsRef.current = null;
+      ws.onclose = () => {
+        console.log("[LiveDashboard] WebSocket disconnected");
+        setConnected(false);
+        wsRef.current = null;
 
-      // Auto-reconnect after 5 seconds
+        // Auto-reconnect after 5 seconds
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log("[LiveDashboard] Attempting to reconnect...");
+          connectWebSocket();
+        }, 5000);
+      };
+    } catch (error) {
+      console.error("[LiveDashboard] Error connecting to WebSocket:", error);
+      // Retry after 5 seconds on error
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log("[LiveDashboard] Attempting to reconnect...");
         connectWebSocket();
       }, 5000);
-    };
+    }
   };
 
   // Initialize WebSocket connection on mount

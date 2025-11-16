@@ -109,6 +109,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(401).json({ success: false, message: "Not authenticated" });
   });
 
+  // Get WebSocket token for authenticated admin users
+  app.get("/api/admin/ws-token", async (req, res) => {
+    if (req.session?.userId) {
+      const adminUser = await storage.getAdminUser(req.session.userId);
+      if (adminUser) {
+        return res.json({
+          success: true,
+          token: process.env.WS_DASHBOARD_TOKEN || ""
+        });
+      }
+    }
+    res.status(401).json({ success: false, message: "Not authenticated" });
+  });
+
   // Contact form submission with provider integration - with rate limiting
   app.post("/api/contact/submit", async (req, res) => {
     try {
