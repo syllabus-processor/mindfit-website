@@ -16,6 +16,7 @@ import AdminContacts from "@/pages/AdminContacts";
 import AdminSubscribers from "@/pages/AdminSubscribers";
 import AdminIntegrations from "@/pages/AdminIntegrations";
 import AdminReferrals from "@/pages/AdminReferrals";
+import AdminReferralForm from "@/pages/AdminReferralForm";
 import LiveDashboard from "@/pages/LiveDashboard";
 import NotFound from "@/pages/not-found";
 
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/admin/contacts" component={AdminContacts} />
       <Route path="/admin/subscribers" component={AdminSubscribers} />
       <Route path="/admin/integrations" component={AdminIntegrations} />
+      <Route path="/admin/referrals/new" component={AdminReferralForm} />
       <Route path="/admin/referrals" component={AdminReferrals} />
       <Route path="/admin/live" component={LiveDashboard} />
       <Route component={NotFound} />
