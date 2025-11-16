@@ -10,7 +10,7 @@
  * npm install cors
  *
  * USAGE:
- * import corsConfig from './security-middleware/05-cors-config';
+ * const corsConfig = require('./security-middleware/05-cors-config');
  * app.use(corsConfig);
  */
 
@@ -27,6 +27,7 @@ import cors from 'cors';
 const ALLOWED_ORIGINS = [
   'https://mindfit.ruha.io',
   'https://www.mindfit.ruha.io',
+  'https://mindfit-app-fhb8h.ondigitalocean.app', // DigitalOcean App Platform domain
   // Add staging/dev origins if needed:
   // 'https://staging.mindfit.ruha.io',
   // 'http://localhost:3000', // Local development only
@@ -132,13 +133,13 @@ export { corsMiddleware, additionalCORSHeaders, ALLOWED_ORIGINS };
 /**
  * IMPLEMENTATION EXAMPLE:
  *
- * import corsConfig from './security-middleware/05-cors-config';
+ * const corsConfig = require('./security-middleware/05-cors-config');
  *
  * // Apply CORS to all routes
  * app.use(corsConfig);
  *
  * // OR apply selectively:
- * import { corsMiddleware } from './security-middleware/05-cors-config';
+ * const { corsMiddleware } = require('./security-middleware/05-cors-config');
  * app.use('/api/', corsMiddleware);
  */
 
@@ -147,13 +148,13 @@ export { corsMiddleware, additionalCORSHeaders, ALLOWED_ORIGINS };
  *
  * For public API endpoints that need different CORS settings:
  *
- * import cors from 'cors';
+ * const cors = require('cors');
  *
  * // Public endpoint - allow all origins
  * app.get('/api/public/status', cors(), statusHandler);
  *
  * // Admin endpoint - use strict CORS
- * import corsConfig from './security-middleware/05-cors-config';
+ * const corsConfig = require('./security-middleware/05-cors-config');
  * app.post('/api/admin/login', corsConfig, loginHandler);
  */
 
@@ -230,7 +231,7 @@ export { corsMiddleware, additionalCORSHeaders, ALLOWED_ORIGINS };
  * For additional CSRF protection, consider:
  * npm install csurf
  *
- * import csrf from 'csurf';
+ * const csrf = require('csurf');
  * const csrfProtection = csrf({ cookie: true });
  * app.use(csrfProtection);
  */
