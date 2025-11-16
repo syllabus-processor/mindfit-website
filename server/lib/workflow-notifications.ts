@@ -5,6 +5,7 @@
 import type { Referral } from "@shared/schema";
 import type { WorkflowStatus, ClientState } from "./workflow";
 import type { SLAViolation, DocumentReminder } from "./workflow-automation";
+import { Resend } from "resend";
 
 // ============================================================================
 // EMAIL TEMPLATES
@@ -229,31 +230,60 @@ MindFit Automation System
 }
 
 // ============================================================================
-// EMAIL SENDING (Stub - to be replaced with actual email service)
+// EMAIL SENDING (Resend Integration)
 // ============================================================================
 
+// Initialize Resend client
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Email configuration
+const EMAIL_FROM = process.env.EMAIL_FROM || "MindFit <noreply@mindfit.ruha.io>";
+const EMAIL_ENABLED = process.env.EMAIL_ENABLED !== "false"; // Enable by default
+
 /**
- * Send email notification
- * TODO: Integrate with actual email service (SendGrid, AWS SES, etc.)
+ * Send email notification via Resend
  */
 export async function sendEmail(notification: EmailNotification): Promise<boolean> {
   console.log(`[EMAIL] Sending ${notification.type} to ${notification.to}`);
   console.log(`[EMAIL] Subject: ${notification.subject}`);
-  console.log(`[EMAIL] Body:\n${notification.body}`);
-  console.log(`[EMAIL] ---`);
 
-  // TODO: Replace with actual email service integration
-  // Example with SendGrid:
-  // const sgMail = require('@sendgrid/mail');
-  // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-  // await sgMail.send({
-  //   to: notification.to,
-  //   from: 'noreply@mindfit.com',
-  //   subject: notification.subject,
-  //   text: notification.body,
-  // });
+  // If email is disabled (for testing), just log and return success
+  if (!EMAIL_ENABLED) {
+    console.log(`[EMAIL] Email disabled - would send:`);
+    console.log(`[EMAIL] Body:\n${notification.body}`);
+    console.log(`[EMAIL] ---`);
+    return true;
+  }
 
-  return true; // Stub: always succeeds
+  // Check for API key
+  if (!process.env.RESEND_API_KEY) {
+    console.error(
+      "[EMAIL] RESEND_API_KEY not configured - email sending disabled"
+    );
+    console.log(`[EMAIL] Body:\n${notification.body}`);
+    console.log(`[EMAIL] ---`);
+    return false;
+  }
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: EMAIL_FROM,
+      to: [notification.to],
+      subject: notification.subject,
+      text: notification.body,
+    });
+
+    if (error) {
+      console.error(`[EMAIL] Failed to send to ${notification.to}:`, error);
+      return false;
+    }
+
+    console.log(`[EMAIL] Successfully sent to ${notification.to} (ID: ${data?.id})`);
+    return true;
+  } catch (error: any) {
+    console.error(`[EMAIL] Exception sending to ${notification.to}:`, error.message);
+    return false;
+  }
 }
 
 /**
