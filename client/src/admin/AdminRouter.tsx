@@ -9,6 +9,7 @@ import {
   Dashboard,
   Login,
   ReferralsList,
+  ReferralForm,
   ReferralDetail,
   Events,
   Flyers,
@@ -111,6 +112,7 @@ export const AdminRouter: React.FC = () => {
       >
         <Route index element={<Dashboard />} />
         <Route path="referrals" element={<ReferralsList />} />
+        <Route path="referrals/new" element={<ReferralForm />} />
         <Route path="referrals/:id" element={<ReferralDetail />} />
         <Route path="events" element={<Events />} />
         <Route path="flyers" element={<Flyers />} />

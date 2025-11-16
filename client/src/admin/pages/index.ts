@@ -5,6 +5,7 @@
 export { Dashboard } from './Dashboard';
 export { Login } from './Login';
 export { ReferralsList } from './ReferralsList';
+export { ReferralForm } from './ReferralForm';
 export { ReferralDetail } from './ReferralDetail';
 export { Events } from './Events';
 export { Flyers } from './Flyers';
