@@ -98,11 +98,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Check auth status
   app.get("/api/admin/me", async (req, res) => {
     if (req.session?.userId) {
-      const user = await storage.getUser(req.session.userId);
-      if (user) {
-        return res.json({ 
-          success: true, 
-          user: { id: user.id, username: user.username }
+      const adminUser = await storage.getAdminUser(req.session.userId);
+      if (adminUser) {
+        return res.json({
+          success: true,
+          user: { id: adminUser.id, username: adminUser.username }
         });
       }
     }
