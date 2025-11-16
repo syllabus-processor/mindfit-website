@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Search, Mail, Phone, AlertCircle, User, FileText, Clock } from "lucide-react";
+import { Loader2, Search, Mail, Phone, AlertCircle, User, FileText, Clock, History, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import AdminLayout from "@/components/AdminLayout";
+import ReferralTimeline from "@/components/referrals/ReferralTimeline";
+import WorkflowStatusModal from "@/components/referrals/WorkflowStatusModal";
 
 interface Referral {
   id: string;
@@ -24,7 +26,9 @@ interface Referral {
   insuranceMemberId?: string;
   referralSource?: string;
   referralNotes?: string;
-  status: string;
+  status: string; // Legacy field (kept for backwards compatibility)
+  clientState: "prospective" | "pending" | "active" | "inactive";
+  workflowStatus: string;
   assignedTherapist?: string;
   assignedSupervisor?: string;
   assignmentNotes?: string;
@@ -35,17 +39,12 @@ interface Referral {
   completedAt?: string;
 }
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "All Statuses" },
+const CLIENT_STATE_OPTIONS = [
+  { value: "all", label: "All States" },
+  { value: "prospective", label: "Prospective" },
   { value: "pending", label: "Pending" },
-  { value: "under_review", label: "Under Review" },
-  { value: "assigned", label: "Assigned" },
-  { value: "contacted", label: "Contacted" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "in_progress", label: "In Progress" },
-  { value: "completed", label: "Completed" },
-  { value: "declined", label: "Declined" },
-  { value: "cancelled", label: "Cancelled" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
 ];
 
 const URGENCY_OPTIONS = [
@@ -57,10 +56,12 @@ const URGENCY_OPTIONS = [
 
 export default function AdminReferrals() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [clientStateFilter, setClientStateFilter] = useState("all");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [selectedReferral, setSelectedReferral] = useState<Referral | null>(null);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+  const [isWorkflowStatusOpen, setIsWorkflowStatusOpen] = useState(false);
   const [assignFormData, setAssignFormData] = useState({
     status: "assigned",
     assignedTherapist: "",
@@ -73,7 +74,7 @@ export default function AdminReferrals() {
 
   // Build query params for filters
   const queryParams = new URLSearchParams();
-  if (statusFilter !== "all") queryParams.set("status", statusFilter);
+  if (clientStateFilter !== "all") queryParams.set("clientState", clientStateFilter);
   if (urgencyFilter !== "all") queryParams.set("urgency", urgencyFilter);
   if (searchTerm) queryParams.set("search", searchTerm);
   const queryString = queryParams.toString();
@@ -121,13 +122,6 @@ export default function AdminReferrals() {
     });
   };
 
-  const handleStatusChange = (referral: Referral, newStatus: string) => {
-    updateReferralMutation.mutate({
-      id: referral.id,
-      updates: { status: newStatus },
-    });
-  };
-
   const getUrgencyBadgeVariant = (urgency: string) => {
     switch (urgency) {
       case "emergency":
@@ -136,18 +130,6 @@ export default function AdminReferrals() {
         return "default";
       default:
         return "secondary";
-    }
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "default";
-      case "cancelled":
-      case "declined":
-        return "secondary";
-      default:
-        return "outline";
     }
   };
 
@@ -181,12 +163,12 @@ export default function AdminReferrals() {
               data-testid="input-search-referrals"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger data-testid="select-status-filter">
-              <SelectValue placeholder="Filter by status" />
+          <Select value={clientStateFilter} onValueChange={setClientStateFilter}>
+            <SelectTrigger data-testid="select-client-state-filter">
+              <SelectValue placeholder="Filter by client state" />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_OPTIONS.map((option) => (
+              {CLIENT_STATE_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -211,10 +193,12 @@ export default function AdminReferrals() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
+              <CardTitle className="text-sm font-medium">Prospective</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{referrals.length}</div>
+              <div className="text-2xl font-bold">
+                {referrals.filter((r) => r.clientState === "prospective").length}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -223,27 +207,27 @@ export default function AdminReferrals() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {referrals.filter((r) => r.status === "pending").length}
+                {referrals.filter((r) => r.clientState === "pending").length}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Emergency</CardTitle>
+              <CardTitle className="text-sm font-medium">Active</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-destructive">
-                {referrals.filter((r) => r.urgency === "emergency").length}
+              <div className="text-2xl font-bold text-primary">
+                {referrals.filter((r) => r.clientState === "active").length}
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Completed</CardTitle>
+              <CardTitle className="text-sm font-medium">Inactive</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {referrals.filter((r) => r.status === "completed").length}
+              <div className="text-2xl font-bold text-muted-foreground">
+                {referrals.filter((r) => r.clientState === "inactive").length}
               </div>
             </CardContent>
           </Card>
@@ -257,7 +241,7 @@ export default function AdminReferrals() {
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
                 <p className="text-lg font-medium">No referrals found</p>
                 <p className="text-sm text-muted-foreground">
-                  {searchTerm || statusFilter !== "all" || urgencyFilter !== "all"
+                  {searchTerm || clientStateFilter !== "all" || urgencyFilter !== "all"
                     ? "Try adjusting your filters"
                     : "Referrals will appear here"}
                 </p>
@@ -290,13 +274,16 @@ export default function AdminReferrals() {
                       </CardDescription>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2 justify-end">
                         <Badge variant={getUrgencyBadgeVariant(referral.urgency)}>
                           {referral.urgency === "emergency" && <AlertCircle className="h-3 w-3 mr-1" />}
                           {referral.urgency.toUpperCase()}
                         </Badge>
-                        <Badge variant={getStatusBadgeVariant(referral.status)}>
-                          {referral.status.replace("_", " ").toUpperCase()}
+                        <Badge variant="default">
+                          {referral.clientState.toUpperCase()}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {referral.workflowStatus.replace(/_/g, " ").toUpperCase()}
                         </Badge>
                       </div>
                       <span className="text-sm text-muted-foreground flex items-center gap-1">
@@ -360,6 +347,28 @@ export default function AdminReferrals() {
                       </Button>
                       <Button
                         variant="outline"
+                        onClick={() => {
+                          setSelectedReferral(referral);
+                          setIsWorkflowStatusOpen(true);
+                        }}
+                        data-testid={`button-workflow-status-${referral.id}`}
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Update Status
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedReferral(referral);
+                          setIsTimelineOpen(true);
+                        }}
+                        data-testid={`button-timeline-${referral.id}`}
+                      >
+                        <History className="mr-2 h-4 w-4" />
+                        View Timeline
+                      </Button>
+                      <Button
+                        variant="outline"
                         onClick={() =>
                           window.open(
                             `mailto:${referral.clientEmail}?subject=Re: Your referral to MindFit Mental Health`,
@@ -369,7 +378,7 @@ export default function AdminReferrals() {
                         data-testid={`button-email-${referral.id}`}
                       >
                         <Mail className="mr-2 h-4 w-4" />
-                        Email Client
+                        Email
                       </Button>
                       {referral.clientPhone && (
                         <Button
@@ -381,21 +390,6 @@ export default function AdminReferrals() {
                           Call
                         </Button>
                       )}
-                      <Select
-                        value={referral.status}
-                        onValueChange={(newStatus) => handleStatusChange(referral, newStatus)}
-                      >
-                        <SelectTrigger className="w-[180px]">
-                          <SelectValue placeholder="Change status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_OPTIONS.filter((opt) => opt.value !== "all").map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
                     </div>
                   </div>
                 </CardContent>
@@ -467,6 +461,31 @@ export default function AdminReferrals() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Timeline Modal */}
+      {selectedReferral && (
+        <Dialog open={isTimelineOpen} onOpenChange={setIsTimelineOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Referral Timeline</DialogTitle>
+              <DialogDescription>
+                View workflow timeline for {selectedReferral.clientName}
+              </DialogDescription>
+            </DialogHeader>
+            <ReferralTimeline referralId={selectedReferral.id} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Workflow Status Modal */}
+      {selectedReferral && (
+        <WorkflowStatusModal
+          referralId={selectedReferral.id}
+          currentStatus={selectedReferral.workflowStatus}
+          isOpen={isWorkflowStatusOpen}
+          onClose={() => setIsWorkflowStatusOpen(false)}
+        />
+      )}
     </AdminLayout>
   );
 }
