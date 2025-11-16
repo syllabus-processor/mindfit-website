@@ -156,35 +156,16 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5" />
-              Integration Settings
+              Settings
             </CardTitle>
             <CardDescription>
-              Configure EMRM and external systems
+              Configure integrations and view live telemetry
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Link href="/admin/integrations">
               <Button className="w-full" data-testid="button-view-integrations">
-                Manage Integrations <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-elevate border-red-200 bg-red-50/50" data-testid="card-action-live-telemetry">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600">
-              <Activity className="h-5 w-5" />
-              Live Telemetry
-            </CardTitle>
-            <CardDescription>
-              Real-time system metrics and monitoring
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/admin/live">
-              <Button className="w-full bg-red-600 hover:bg-red-700" data-testid="button-view-live-telemetry">
-                View Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+                Open Settings <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </CardContent>
