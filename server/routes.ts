@@ -7,6 +7,7 @@ import { createProvider } from "./providers";
 import bcrypt from "bcryptjs";
 import { registerEventRoutes } from "./routes/events";
 import { registerMigrationRoutes } from "./routes/migrate";
+import { registerReferralRoutes } from "./routes/referrals";
 
 // Security middleware - Rate limiters
 // NOTE: Rate limiting disabled - using Cloudflare WAF instead
@@ -512,6 +513,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ========================================================================
   // MINDFIT V2 ROUTES REGISTRATION
   // ========================================================================
+
+  // Register public referral routes (for client submissions)
+  registerReferralRoutes(app);
 
   // Register events routes (public + protected)
   registerEventRoutes(app, requireAuth);
