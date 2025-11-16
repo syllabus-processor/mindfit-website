@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { seedAdmin } from "./startup/seedAdmin";
 
 const app = express();
 
@@ -89,6 +90,12 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+
+  // =============================================================================
+  // MARP v1 - Auto Admin Seeding
+  // =============================================================================
+  console.log('🔄 MARP: Checking admin user status...');
+  await seedAdmin();
 
   // Error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
