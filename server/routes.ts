@@ -6,6 +6,7 @@ import { fromError } from "zod-validation-error";
 import { createProvider } from "./providers";
 import bcrypt from "bcryptjs";
 import { registerEventRoutes } from "./routes/events";
+import { registerMigrationRoutes } from "./routes/migrate";
 
 // Security middleware - Rate limiters
 // NOTE: Rate limiting disabled - using Cloudflare WAF instead
@@ -491,6 +492,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register events routes (public + protected)
   registerEventRoutes(app, requireAuth);
+
+  // Register migration routes (admin only)
+  registerMigrationRoutes(app, requireAuth);
 
   const httpServer = createServer(app);
 
