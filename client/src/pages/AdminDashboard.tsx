@@ -113,7 +113,26 @@ export default function AdminDashboard() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover-elevate border-blue-200 bg-blue-50/50" data-testid="card-action-create-referral">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <Users className="h-5 w-5" />
+              Create Referral
+            </CardTitle>
+            <CardDescription>
+              Start Bronwyn's intake workflow
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/admin/referrals/new">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700" data-testid="button-create-referral">
+                New Referral <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+
         <Card className="hover-elevate" data-testid="card-action-contacts">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
