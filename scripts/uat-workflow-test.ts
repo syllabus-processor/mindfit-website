@@ -117,7 +117,8 @@ async function getReferral(referralId: string): Promise<any> {
     headers: { Cookie: sessionCookie },
   });
   if (response.ok) {
-    return await response.json();
+    const data = await response.json();
+    return data.referral; // Extract referral from API response
   }
   return null;
 }
