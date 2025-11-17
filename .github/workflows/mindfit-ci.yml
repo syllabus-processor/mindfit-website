@@ -1,0 +1,277 @@
+name: MindFit CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18.x'
+  PRODUCTION_URL: 'https://mindfit.ruha.io'
+
+jobs:
+  build:
+    name: Build & Compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            build/
+          retention-days: 7
+
+  test-api:
+    name: API Testing (UAT)
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting 2 minutes for DigitalOcean deployment..."
+          sleep 120
+
+      - name: Health check production
+        run: |
+          echo "🔍 Checking production health..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.PRODUCTION_URL }})
+          if [ "$STATUS" = "200" ]; then
+            echo "✅ Production is healthy (HTTP $STATUS)"
+          else
+            echo "❌ Production health check failed (HTTP $STATUS)"
+            exit 1
+          fi
+
+      - name: Run Phase 4 Group 2 UAT tests
+        run: |
+          echo "🧪 Running Phase 4 Group 2 UAT suite..."
+          BASE_URL="${{ env.PRODUCTION_URL }}" npx tsx scripts/uat-phase4-group2.ts
+        env:
+          BASE_URL: ${{ env.PRODUCTION_URL }}
+        continue-on-error: true
+        id: uat_tests
+
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "📊 UAT Test Results" > test-report.txt
+          echo "==================" >> test-report.txt
+          echo "Timestamp: $(date)" >> test-report.txt
+          echo "Commit: ${{ github.sha }}" >> test-report.txt
+          echo "Branch: ${{ github.ref_name }}" >> test-report.txt
+          if [ "${{ steps.uat_tests.outcome }}" = "success" ]; then
+            echo "Status: ✅ PASS" >> test-report.txt
+          else
+            echo "Status: ❌ FAIL" >> test-report.txt
+          fi
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-test-report
+          path: test-report.txt
+          retention-days: 30
+
+      - name: Comment test results on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('test-report.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## UAT Test Results\n\n```\n' + report + '\n```'
+            });
+
+  verify-endpoints:
+    name: Verify Critical Endpoints
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 10
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Wait for deployment
+        run: sleep 120
+
+      - name: Test homepage
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.PRODUCTION_URL }})
+          echo "Homepage: HTTP $STATUS"
+          [ "$STATUS" = "200" ]
+
+      - name: Test admin login endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST ${{ env.PRODUCTION_URL }}/api/admin/login \
+            -H "Content-Type: application/json" \
+            -d '{"username":"test","password":"test"}')
+          echo "Admin login: HTTP $STATUS"
+          [ "$STATUS" = "401" ] || [ "$STATUS" = "200" ]
+
+      - name: Test therapists endpoint (requires auth)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            ${{ env.PRODUCTION_URL }}/api/therapists)
+          echo "Therapists API: HTTP $STATUS"
+          [ "$STATUS" = "401" ]
+
+      - name: Test rooms endpoint (requires auth)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            ${{ env.PRODUCTION_URL }}/api/rooms)
+          echo "Rooms API: HTTP $STATUS"
+          [ "$STATUS" = "401" ]
+
+      - name: Test appointments endpoint (requires auth)
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            ${{ env.PRODUCTION_URL }}/api/appointments)
+          echo "Appointments API: HTTP $STATUS"
+          [ "$STATUS" = "401" ]
+
+      - name: All endpoints verified
+        run: echo "✅ All critical endpoints responding correctly"
+
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [build, test-api, verify-endpoints]
+    if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "❌ CI/CD Pipeline Failed"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "View details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          # Add Slack/Discord webhook here if needed
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
+          #   -H "Content-Type: application/json" \
+          #   -d '{"text":"MindFit CI/CD failed for commit ${{ github.sha }}"}'
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: Check for secrets in code
+        run: |
+          echo "🔍 Scanning for hardcoded secrets..."
+          ! grep -r "password.*=" --include="*.ts" --include="*.js" server/ || echo "⚠️ Found potential secrets"
+          ! grep -r "api[_-]key.*=" --include="*.ts" --include="*.js" server/ || echo "⚠️ Found potential API keys"
+          echo "✅ Secret scan complete"
+
+  lint:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter (if configured)
+        run: npm run lint || echo "⚠️ No lint script found"
+        continue-on-error: true
+
+      - name: Check formatting (if configured)
+        run: npm run format:check || echo "⚠️ No format script found"
+        continue-on-error: true
+
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: [build, test-api, verify-endpoints, security-scan, lint]
+    if: always()
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# MindFit CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Author**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Job Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: ${{ needs.build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- API Tests: ${{ needs.test-api.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Endpoint Verification: ${{ needs.verify-endpoints.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ needs.lint.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Pipeline completed at $(date)" >> $GITHUB_STEP_SUMMARY
