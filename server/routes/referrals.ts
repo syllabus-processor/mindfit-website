@@ -583,10 +583,10 @@ export async function getNextStatuses(req: Request, res: Response) {
       });
     }
 
-    // Import NEW workflow validator (Phase 2.5 - UI Integration)
-    const { getAllowedNextStatuses, getStatusLabel } = await import("../lib/workflow-validator");
+    // Import workflow logic (Phase 2.5 - UI Integration)
+    const { getNextStatuses, getStatusLabel } = await import("../lib/workflow");
 
-    const nextStatuses = getAllowedNextStatuses(referral.workflowStatus as WorkflowStatus);
+    const nextStatuses = getNextStatuses(referral.workflowStatus as WorkflowStatus);
 
     // Include human-readable labels for UI
     const statusesWithLabels = nextStatuses.map(status => ({
