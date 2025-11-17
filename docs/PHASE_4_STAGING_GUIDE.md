@@ -1369,16 +1369,16 @@ Edit `package.json` to add Phase 4 scripts:
 Edit `/tmp/mindfit-website/.env`:
 ```bash
 # Existing variables
-DATABASE_URL=postgresql://mindfit_user:AVNS_dqU5KzHaxMy5p-nVIjq@mindfit-db-do-user-18432419-0.m.db.ondigitalocean.com:25060/mindfit?sslmode=require
-SESSION_SECRET=mindfit-dev-secret-change-in-production-$(date +%s)
+DATABASE_URL=postgresql://mindfit_user:<REDACTED>@mindfit-db-do-user-18432419-0.m.db.ondigitalocean.com:25060/mindfit?sslmode=require
+SESSION_SECRET=<GENERATE_SECURE_SECRET>
 NODE_ENV=development
 PORT=5000
 
 # Phase 4 additions
-RESEND_API_KEY=re_xxxxxxxxxxxxx
-TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxx
-TWILIO_AUTH_TOKEN=xxxxxxxxxxxxx
-TWILIO_PHONE_NUMBER=+1234567890
+RESEND_API_KEY=<YOUR_RESEND_API_KEY>
+TWILIO_ACCOUNT_SID=<YOUR_TWILIO_SID>
+TWILIO_AUTH_TOKEN=<YOUR_TWILIO_TOKEN>
+TWILIO_PHONE_NUMBER=<YOUR_TWILIO_PHONE>
 
 # Scheduling Configuration
 DEFAULT_SLOT_DURATION=60
