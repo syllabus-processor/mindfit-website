@@ -72,7 +72,7 @@ async function loginAsAdmin(): Promise<boolean> {
 async function createTestReferral(clientName: string): Promise<string | null> {
   const start = Date.now();
   try {
-    const response = await fetch(`${API_BASE}/api/referrals/submit`, {
+    const response = await fetch(`${API_BASE}/api/referrals`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -96,10 +96,10 @@ async function createTestReferral(clientName: string): Promise<string | null> {
       addResult(
         `Create Referral: ${clientName}`,
         'PASS',
-        `Referral ID: ${data.referralId}`,
+        `Referral ID: ${data.referral.id}`,
         Date.now() - start
       );
-      return data.referralId;
+      return data.referral.id;
     } else {
       const error = await response.text();
       addResult(`Create Referral: ${clientName}`, 'FAIL', `Failed: ${error}`, Date.now() - start);
