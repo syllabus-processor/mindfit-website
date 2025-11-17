@@ -203,131 +203,264 @@ async function testWorkflowTransitions() {
 
   const testCases = [
     {
-      name: 'Referral Phase - Full Path',
+      name: 'Happy Path - Complete Journey to Discharge',
       transitions: [
-        'referral_submitted',
-        'referral_under_review',
         'documents_requested',
-        'referral_under_review',
-        'referral_accepted',
-      ],
-    },
-    {
-      name: 'Referral Phase - Accept Path',
-      transitions: ['referral_submitted', 'referral_under_review', 'referral_accepted'],
-    },
-    {
-      name: 'Referral Phase - Decline Path',
-      transitions: ['referral_submitted', 'referral_under_review', 'referral_declined'],
-      requiresReason: 'referral_declined',
-    },
-    {
-      name: 'Pre-Staging to Staging',
-      transitions: [
-        'referral_submitted',
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-      ],
-    },
-    {
-      name: 'Staging to Assignment - Accept Path',
-      transitions: [
-        'referral_submitted',
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
+        'documents_received',
+        'insurance_verification_pending',
+        'insurance_verified',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
         'assignment_accepted',
+        'client_contacted',
         'intake_scheduled',
-      ],
-    },
-    {
-      name: 'Staging to Assignment - Decline and Retry',
-      transitions: [
-        'referral_submitted',
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
-        'assignment_declined',
-        'staging',
-      ],
-    },
-    {
-      name: 'Full Happy Path to Treatment',
-      transitions: [
-        'referral_submitted',
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
-        'assignment_accepted',
-        'intake_scheduled',
+        'intake_completed',
         'waiting_first_session',
         'in_treatment',
+        'discharge_pending',
+        'discharged',
+      ],
+      requiresReason: { discharged: 'UAT test - treatment goals achieved' },
+    },
+    {
+      name: 'Pre-Staging - Direct to Review (Skip Insurance)',
+      transitions: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
       ],
     },
     {
-      name: 'Treatment On Hold and Resume',
+      name: 'Pre-Staging - Decline Early',
       transitions: [
-        'referral_submitted',
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
+        'documents_requested',
+        'declined',
+      ],
+      requiresReason: { declined: 'UAT test - client not suitable' },
+    },
+    {
+      name: 'Pre-Staging - Cancel During Documents',
+      transitions: [
+        'documents_requested',
+        'cancelled',
+      ],
+    },
+    {
+      name: 'Insurance Verification Failure Path',
+      transitions: [
+        'documents_requested',
+        'documents_received',
+        'insurance_verification_pending',
+        'insurance_verification_failed',
+        'referred_out',
+      ],
+    },
+    {
+      name: 'Pre-Staging - Repeated Document Requests',
+      transitions: [
+        'documents_requested',
+        'documents_requested', // Can repeat this status
+        'documents_received',
+        'pre_stage_review',
+      ],
+    },
+    {
+      name: 'Staging - Assignment Declined with Retry',
+      transitions: [
+        'documents_requested',
+        'documents_received',
+        'insurance_verification_pending',
+        'insurance_verified',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_declined',
+        'matching_in_progress', // Back to matching
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
         'assignment_accepted',
+      ],
+    },
+    {
+      name: 'Staging - Multiple Matching Attempts',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'matching_in_progress', // Can repeat
+        'therapist_identified',
+        'matching_in_progress', // Can go back
+        'therapist_identified',
+        'assignment_pending',
+      ],
+    },
+    {
+      name: 'Acceptance - Repeated Client Contact Attempts',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_accepted',
+        'client_contacted',
+        'client_contacted', // Can repeat
         'intake_scheduled',
+      ],
+    },
+    {
+      name: 'Acceptance - Reschedule Intake',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_accepted',
+        'client_contacted',
+        'intake_scheduled',
+        'intake_scheduled', // Can repeat
+        'intake_completed',
+        'waiting_first_session',
+      ],
+    },
+    {
+      name: 'Active Treatment - On Hold and Resume',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_accepted',
+        'client_contacted',
+        'intake_scheduled',
+        'intake_completed',
         'waiting_first_session',
         'in_treatment',
         'treatment_on_hold',
+        'treatment_resumed',
         'in_treatment',
       ],
     },
     {
-      name: 'Treatment Complete',
+      name: 'Active Treatment - Direct Discharge from Treatment',
       transitions: [
-        'referral_submitted',
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
         'assignment_accepted',
+        'client_contacted',
         'intake_scheduled',
+        'intake_completed',
         'waiting_first_session',
         'in_treatment',
-        'treatment_complete',
+        'discharged', // Direct discharge
       ],
+      requiresReason: { discharged: 'UAT test - emergency discharge' },
     },
     {
-      name: 'Decline from Treatment',
+      name: 'Active Treatment - Discharge from Hold',
       transitions: [
-        'referral_submitted',
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
         'assignment_accepted',
+        'client_contacted',
         'intake_scheduled',
+        'intake_completed',
         'waiting_first_session',
         'in_treatment',
+        'treatment_on_hold',
+        'discharge_pending',
+        'discharged',
+      ],
+      requiresReason: { discharged: 'UAT test - discharge while on hold' },
+    },
+    {
+      name: 'Decline from Assignment Phase',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
         'declined',
       ],
-      requiresReason: 'declined',
+      requiresReason: { declined: 'UAT test - declined during assignment' },
+    },
+    {
+      name: 'Decline from Acceptance Phase',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_accepted',
+        'client_contacted',
+        'declined',
+      ],
+      requiresReason: { declined: 'UAT test - client declined services' },
+    },
+    {
+      name: 'Cancel from Staging Phase',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'cancelled',
+      ],
+    },
+    {
+      name: 'Refer Out from Pre-Stage Review',
+      transitions: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'referred_out',
+      ],
+    },
+    {
+      name: 'Refer Out from Matching',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'referred_out',
+      ],
+    },
+    {
+      name: 'Refer Out after Assignment Declined',
+      transitions: [
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_declined',
+        'referred_out',
+      ],
     },
   ];
 
@@ -341,9 +474,9 @@ async function testWorkflowTransitions() {
     }
 
     let success = true;
-    for (let i = 1; i < testCase.transitions.length; i++) {
+    for (let i = 0; i < testCase.transitions.length; i++) {
       const targetStatus = testCase.transitions[i];
-      const reason = testCase.requiresReason === targetStatus ? 'UAT test decline reason' : undefined;
+      const reason = testCase.requiresReason?.[targetStatus as keyof typeof testCase.requiresReason];
 
       // Validate next statuses
       const nextStatuses = await getNextStatuses(referralId);
@@ -379,7 +512,7 @@ async function testWorkflowTransitions() {
     }
 
     if (success) {
-      addResult(testCase.name, 'PASS', `All ${testCase.transitions.length - 1} transitions successful`);
+      addResult(testCase.name, 'PASS', `All ${testCase.transitions.length} transitions successful`);
     }
   }
 }
@@ -396,11 +529,12 @@ async function testTimelineDisplay() {
 
   // Perform multiple transitions to generate timeline events
   const transitions = [
-    'referral_under_review',
     'documents_requested',
-    'referral_under_review',
-    'referral_accepted',
-    'pre_staging',
+    'documents_received',
+    'insurance_verification_pending',
+    'insurance_verified',
+    'pre_stage_review',
+    'ready_for_assignment',
   ];
 
   for (const status of transitions) {
@@ -456,11 +590,16 @@ async function testClientStateFiltering() {
   // Create referrals in different states
   const testReferrals = [
     { name: 'Prospective Client 1', finalStatus: 'referral_submitted' },
-    { name: 'Prospective Client 2', finalStatus: 'referral_under_review' },
-    { name: 'Pending Client 1', finalStatus: 'pre_staging' },
-    { name: 'Pending Client 2', finalStatus: 'staging' },
+    { name: 'Prospective Client 2', finalStatus: 'documents_requested' },
+    { name: 'Prospective Client 3', finalStatus: 'insurance_verified' },
+    { name: 'Pending Client 1', finalStatus: 'ready_for_assignment' },
+    { name: 'Pending Client 2', finalStatus: 'matching_in_progress' },
+    { name: 'Pending Client 3', finalStatus: 'assignment_offered' },
+    { name: 'Pending Client 4', finalStatus: 'client_contacted' },
     { name: 'Active Client 1', finalStatus: 'in_treatment' },
     { name: 'Active Client 2', finalStatus: 'treatment_on_hold' },
+    { name: 'Inactive Client 1', finalStatus: 'discharged' },
+    { name: 'Inactive Client 2', finalStatus: 'cancelled' },
   ];
 
   const createdReferrals = [];
@@ -476,39 +615,109 @@ async function testClientStateFiltering() {
     // Navigate through required transitions
     const pathMap: { [key: string]: string[] } = {
       referral_submitted: [],
-      referral_under_review: ['referral_under_review'],
-      pre_staging: ['referral_under_review', 'referral_accepted', 'pre_staging'],
-      staging: ['referral_under_review', 'referral_accepted', 'pre_staging', 'pre_staging_complete', 'staging'],
-      in_treatment: [
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
+      documents_requested: ['documents_requested'],
+      insurance_verified: [
+        'documents_requested',
+        'documents_received',
+        'insurance_verification_pending',
+        'insurance_verified',
+      ],
+      ready_for_assignment: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
+      ],
+      matching_in_progress: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+      ],
+      assignment_offered: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+      ],
+      client_contacted: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
         'assignment_accepted',
+        'client_contacted',
+      ],
+      in_treatment: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_accepted',
+        'client_contacted',
         'intake_scheduled',
+        'intake_completed',
         'waiting_first_session',
         'in_treatment',
       ],
       treatment_on_hold: [
-        'referral_under_review',
-        'referral_accepted',
-        'pre_staging',
-        'pre_staging_complete',
-        'staging',
-        'assignment_proposed',
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
         'assignment_accepted',
+        'client_contacted',
         'intake_scheduled',
+        'intake_completed',
         'waiting_first_session',
         'in_treatment',
         'treatment_on_hold',
+      ],
+      discharged: [
+        'documents_requested',
+        'documents_received',
+        'pre_stage_review',
+        'ready_for_assignment',
+        'matching_in_progress',
+        'therapist_identified',
+        'assignment_pending',
+        'assignment_offered',
+        'assignment_accepted',
+        'client_contacted',
+        'intake_scheduled',
+        'intake_completed',
+        'waiting_first_session',
+        'in_treatment',
+        'discharge_pending',
+        'discharged',
+      ],
+      cancelled: [
+        'documents_requested',
+        'cancelled',
       ],
     };
 
     const path = pathMap[ref.finalStatus] || [];
     for (const status of path) {
-      await transitionStatus(ref.referralId, status);
+      const reason = status === 'discharged' ? 'UAT test - filtering test discharge' : undefined;
+      await transitionStatus(ref.referralId, status, reason);
     }
   }
 
@@ -586,7 +795,7 @@ async function testValidationRules() {
   }
 
   // Test 2: Decline without reason should fail
-  await transitionStatus(referralId, 'referral_under_review');
+  await transitionStatus(referralId, 'documents_requested');
   const start2 = Date.now();
   const response2 = await fetch(`${API_BASE}/api/referrals/${referralId}/transition`, {
     method: 'POST',
@@ -594,7 +803,7 @@ async function testValidationRules() {
       'Content-Type': 'application/json',
       Cookie: sessionCookie,
     },
-    body: JSON.stringify({ targetStatus: 'referral_declined' }), // No reason provided
+    body: JSON.stringify({ targetStatus: 'declined' }), // No reason provided
   });
 
   if (!response2.ok) {
@@ -613,32 +822,113 @@ async function testValidationRules() {
     );
   }
 
-  // Test 3: Terminal states should have no next statuses
-  const referralId2 = await createTestReferral('UAT Terminal State Test');
+  // Test 3: Discharge without reason should fail
+  const referralId2 = await createTestReferral('UAT Discharge Validation Test');
   if (referralId2) {
-    // Transition to terminal state
+    // Get to in_treatment
     const path = [
-      'referral_under_review',
-      'referral_accepted',
-      'pre_staging',
-      'pre_staging_complete',
-      'staging',
-      'assignment_proposed',
+      'documents_requested',
+      'documents_received',
+      'pre_stage_review',
+      'ready_for_assignment',
+      'matching_in_progress',
+      'therapist_identified',
+      'assignment_pending',
+      'assignment_offered',
       'assignment_accepted',
+      'client_contacted',
       'intake_scheduled',
+      'intake_completed',
       'waiting_first_session',
       'in_treatment',
-      'treatment_complete',
     ];
     for (const status of path) {
       await transitionStatus(referralId2, status);
     }
 
-    const nextStatuses = await getNextStatuses(referralId2);
-    if (nextStatuses.length === 0) {
-      addResult('Terminal State', 'PASS', 'treatment_complete has no next statuses');
+    const start3 = Date.now();
+    const response3 = await fetch(`${API_BASE}/api/referrals/${referralId2}/transition`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: sessionCookie,
+      },
+      body: JSON.stringify({ targetStatus: 'discharged' }), // No reason provided
+    });
+
+    if (!response3.ok) {
+      addResult(
+        'Discharge Requires Reason',
+        'PASS',
+        'System correctly requires reason for discharge',
+        Date.now() - start3
+      );
     } else {
-      addResult('Terminal State', 'FAIL', `Terminal state has ${nextStatuses.length} next statuses`);
+      addResult(
+        'Discharge Requires Reason',
+        'FAIL',
+        'System allowed discharge without reason',
+        Date.now() - start3
+      );
+    }
+  }
+
+  // Test 4: Terminal states should have no next statuses
+  const referralId3 = await createTestReferral('UAT Terminal State Test');
+  if (referralId3) {
+    // Transition to discharged terminal state
+    const path = [
+      'documents_requested',
+      'documents_received',
+      'pre_stage_review',
+      'ready_for_assignment',
+      'matching_in_progress',
+      'therapist_identified',
+      'assignment_pending',
+      'assignment_offered',
+      'assignment_accepted',
+      'client_contacted',
+      'intake_scheduled',
+      'intake_completed',
+      'waiting_first_session',
+      'in_treatment',
+      'discharge_pending',
+      'discharged',
+    ];
+    for (const status of path) {
+      const reason = status === 'discharged' ? 'UAT test - terminal state validation' : undefined;
+      await transitionStatus(referralId3, status, reason);
+    }
+
+    const nextStatuses = await getNextStatuses(referralId3);
+    if (nextStatuses.length === 0) {
+      addResult('Terminal State: discharged', 'PASS', 'discharged has no next statuses');
+    } else {
+      addResult('Terminal State: discharged', 'FAIL', `Terminal state has ${nextStatuses.length} next statuses`);
+    }
+  }
+
+  // Test 5: Test other terminal states
+  const terminalTests = [
+    { status: 'declined', path: ['documents_requested', 'declined'], reason: 'UAT test - terminal state test' },
+    { status: 'cancelled', path: ['documents_requested', 'cancelled'], reason: undefined },
+    { status: 'referred_out', path: ['documents_requested', 'documents_received', 'pre_stage_review', 'referred_out'], reason: undefined },
+  ];
+
+  for (const terminalTest of terminalTests) {
+    const testReferralId = await createTestReferral(`UAT Terminal ${terminalTest.status}`);
+    if (testReferralId) {
+      for (const status of terminalTest.path) {
+        const reason = status === terminalTest.status ? terminalTest.reason : undefined;
+        await transitionStatus(testReferralId, status, reason);
+      }
+
+      const nextStatuses = await getNextStatuses(testReferralId);
+      if (nextStatuses.length === 0) {
+        addResult(`Terminal State: ${terminalTest.status}`, 'PASS', `${terminalTest.status} has no next statuses`);
+      } else {
+        addResult(`Terminal State: ${terminalTest.status}`, 'FAIL', `Terminal state has ${nextStatuses.length} next statuses`);
+      }
     }
   }
 }
@@ -653,9 +943,9 @@ function generateReport() {
   const total = results.length;
 
   log(`\nTotal Tests: ${total}`);
-  log(`✅ Passed: ${passed}`, 'green');
-  log(`❌ Failed: ${failed}`, failed > 0 ? 'red' : 'reset');
-  log(`⏭️  Skipped: ${skipped}`, 'yellow');
+  log(`Passed: ${passed}`, 'green');
+  log(`Failed: ${failed}`, failed > 0 ? 'red' : 'reset');
+  log(`Skipped: ${skipped}`, 'yellow');
 
   const passRate = ((passed / total) * 100).toFixed(2);
   log(`\nPass Rate: ${passRate}%`, passed === total ? 'green' : 'yellow');
@@ -665,7 +955,7 @@ function generateReport() {
     results
       .filter((r) => r.status === 'FAIL')
       .forEach((r) => {
-        log(`❌ ${r.test}: ${r.message}`, 'red');
+        log(`${r.test}: ${r.message}`, 'red');
       });
   }
 
@@ -691,7 +981,7 @@ async function main() {
   // Login
   const loggedIn = await loginAsAdmin();
   if (!loggedIn) {
-    log('\n❌ Cannot proceed without authentication', 'red');
+    log('\nCannot proceed without authentication', 'red');
     process.exit(1);
   }
 
@@ -709,7 +999,7 @@ async function main() {
 }
 
 main().catch((error) => {
-  log(`\n❌ Fatal Error: ${error.message}`, 'red');
+  log(`\nFatal Error: ${error.message}`, 'red');
   console.error(error);
   process.exit(1);
 });
