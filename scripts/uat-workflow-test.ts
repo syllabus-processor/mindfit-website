@@ -500,11 +500,11 @@ async function testWorkflowTransitions() {
       // Verify state change
       await new Promise((resolve) => setTimeout(resolve, 100)); // Brief pause
       const referral = await getReferral(referralId);
-      if (referral.workflowStatus !== targetStatus) {
+      if (referral.workflow_status !== targetStatus) {
         addResult(
           `Verify State Change`,
           'FAIL',
-          `Expected ${targetStatus}, got ${referral.workflowStatus}`
+          `Expected ${targetStatus}, got ${referral.workflow_status}`
         );
         success = false;
         break;
@@ -732,7 +732,7 @@ async function testClientStateFiltering() {
     const duration = Date.now() - start;
 
     // Verify all returned referrals match the filter
-    const allMatch = filtered.every((r: any) => r.clientState === state);
+    const allMatch = filtered.every((r: any) => r.client_state === state);
     if (allMatch) {
       addResult(
         `Filter: ${state}`,
