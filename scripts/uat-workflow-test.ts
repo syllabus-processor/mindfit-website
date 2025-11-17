@@ -2,7 +2,7 @@
 // Campaign 1 - Sprint 6.5: Phase 3 - UAT Testing
 // Classification: TIER-1 | Automated validation of workflow transitions
 
-import fetch from 'node-fetch';
+// Node.js 18+ has built-in fetch support, no import needed
 
 const API_BASE = process.env.API_BASE || 'http://localhost:5000';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@rsl.local';
