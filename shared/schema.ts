@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer, serial, boolean, time, date, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -222,6 +222,235 @@ export type InsertIntegrationSetting = z.infer<typeof insertIntegrationSettingSc
 export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type UpdateReferral = z.infer<typeof updateReferralSchema>;
 export type Referral = typeof referrals.$inferSelect;
+
+// ============================================================================
+// MindFit Phase 4 - Scheduling System Tables
+// ============================================================================
+
+export const therapists = pgTable("therapists", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  phone: varchar("phone", { length: 20 }),
+  specialties: text("specialties").array(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const rooms = pgTable("rooms", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  location: varchar("location", { length: 255 }),
+  capacity: integer("capacity").default(1),
+  isVirtual: boolean("is_virtual").default(false),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const appointments = pgTable("appointments", {
+  id: serial("id").primaryKey(),
+  clientId: integer("client_id"),
+  therapistId: integer("therapist_id").references(() => therapists.id, { onDelete: "set null" }),
+  roomId: integer("room_id").references(() => rooms.id, { onDelete: "set null" }),
+  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+  status: varchar("status", { length: 50 }).default("scheduled"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const availabilityTemplates = pgTable("availability_templates", {
+  id: serial("id").primaryKey(),
+  therapistId: integer("therapist_id").references(() => therapists.id, { onDelete: "cascade" }).notNull(),
+  dayOfWeek: integer("day_of_week").notNull(), // 0-6 (Sunday-Saturday)
+  startTime: time("start_time").notNull(),
+  endTime: time("end_time").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const availabilityExceptions = pgTable("availability_exceptions", {
+  id: serial("id").primaryKey(),
+  therapistId: integer("therapist_id").references(() => therapists.id, { onDelete: "cascade" }).notNull(),
+  date: date("date").notNull(),
+  startTime: time("start_time"),
+  endTime: time("end_time"),
+  exceptionType: varchar("exception_type", { length: 50 }).notNull(), // 'vacation', 'sick', 'override', 'meeting'
+  isAvailable: boolean("is_available").default(false),
+  reason: varchar("reason", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const calendarEvents = pgTable("calendar_events", {
+  id: serial("id").primaryKey(),
+  therapistId: integer("therapist_id").references(() => therapists.id, { onDelete: "set null" }),
+  roomId: integer("room_id").references(() => rooms.id, { onDelete: "set null" }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startTime: timestamp("start_time", { withTimezone: true }).notNull(),
+  endTime: timestamp("end_time", { withTimezone: true }).notNull(),
+  eventType: varchar("event_type", { length: 50 }).default("admin"),
+  maxParticipants: integer("max_participants"),
+  currentParticipants: integer("current_participants").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  appointmentId: integer("appointment_id"),
+  notificationType: varchar("notification_type", { length: 50 }).notNull(), // 'booking_confirmation', 'reminder', 'cancel', 'reschedule'
+  status: varchar("status", { length: 50 }).default("pending"), // 'pending', 'sent', 'failed'
+  scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+  recipientEmail: varchar("recipient_email", { length: 255 }),
+  recipientPhone: varchar("recipient_phone", { length: 20 }),
+  payload: jsonb("payload"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// ============================================================================
+// Phase 4 Insert/Update Schemas
+// ============================================================================
+
+export const insertTherapistSchema = createInsertSchema(therapists).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().min(2, "Therapist name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().optional(),
+  specialties: z.array(z.string()).optional(),
+  isActive: z.boolean().default(true).optional(),
+});
+
+export const insertRoomSchema = createInsertSchema(rooms).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  name: z.string().min(2, "Room name must be at least 2 characters"),
+  location: z.string().optional(),
+  capacity: z.number().int().positive().default(1).optional(),
+  isVirtual: z.boolean().default(false).optional(),
+  isActive: z.boolean().default(true).optional(),
+});
+
+export const insertAppointmentSchema = createInsertSchema(appointments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  clientId: z.number().int().optional(),
+  therapistId: z.number().int().optional(),
+  roomId: z.number().int().optional(),
+  startTime: z.string().or(z.date()),
+  endTime: z.string().or(z.date()),
+  status: z.enum(["scheduled", "confirmed", "cancelled", "completed", "no_show"]).default("scheduled").optional(),
+  notes: z.string().optional(),
+});
+
+export const insertAvailabilityTemplateSchema = createInsertSchema(availabilityTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  therapistId: z.number().int(),
+  dayOfWeek: z.number().int().min(0).max(6),
+  startTime: z.string(),
+  endTime: z.string(),
+});
+
+export const insertAvailabilityExceptionSchema = createInsertSchema(availabilityExceptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  therapistId: z.number().int(),
+  date: z.string().or(z.date()),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  exceptionType: z.enum(["vacation", "sick", "override", "meeting"]),
+  isAvailable: z.boolean().default(false).optional(),
+  reason: z.string().optional(),
+});
+
+export const insertCalendarEventSchema = createInsertSchema(calendarEvents).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  therapistId: z.number().int().optional(),
+  roomId: z.number().int().optional(),
+  title: z.string().min(2, "Event title must be at least 2 characters"),
+  description: z.string().optional(),
+  startTime: z.string().or(z.date()),
+  endTime: z.string().or(z.date()),
+  eventType: z.string().default("admin").optional(),
+  maxParticipants: z.number().int().positive().optional(),
+  currentParticipants: z.number().int().min(0).default(0).optional(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  sentAt: true,
+}).extend({
+  appointmentId: z.number().int().optional(),
+  notificationType: z.enum(["booking_confirmation", "reminder", "cancel", "reschedule"]),
+  status: z.enum(["pending", "sent", "failed"]).default("pending").optional(),
+  scheduledFor: z.string().or(z.date()),
+  recipientEmail: z.string().email().optional(),
+  recipientPhone: z.string().optional(),
+  payload: z.any().optional(),
+});
+
+export const updateTherapistSchema = insertTherapistSchema.partial();
+export const updateRoomSchema = insertRoomSchema.partial();
+export const updateAppointmentSchema = insertAppointmentSchema.partial();
+export const updateAvailabilityTemplateSchema = insertAvailabilityTemplateSchema.partial();
+export const updateAvailabilityExceptionSchema = insertAvailabilityExceptionSchema.partial();
+export const updateCalendarEventSchema = insertCalendarEventSchema.partial();
+export const updateNotificationSchema = insertNotificationSchema.partial();
+
+// ============================================================================
+// Phase 4 Type Exports
+// ============================================================================
+
+export type Therapist = typeof therapists.$inferSelect;
+export type InsertTherapist = z.infer<typeof insertTherapistSchema>;
+export type UpdateTherapist = z.infer<typeof updateTherapistSchema>;
+
+export type Room = typeof rooms.$inferSelect;
+export type InsertRoom = z.infer<typeof insertRoomSchema>;
+export type UpdateRoom = z.infer<typeof updateRoomSchema>;
+
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+export type UpdateAppointment = z.infer<typeof updateAppointmentSchema>;
+
+export type AvailabilityTemplate = typeof availabilityTemplates.$inferSelect;
+export type InsertAvailabilityTemplate = z.infer<typeof insertAvailabilityTemplateSchema>;
+export type UpdateAvailabilityTemplate = z.infer<typeof updateAvailabilityTemplateSchema>;
+
+export type AvailabilityException = typeof availabilityExceptions.$inferSelect;
+export type InsertAvailabilityException = z.infer<typeof insertAvailabilityExceptionSchema>;
+export type UpdateAvailabilityException = z.infer<typeof updateAvailabilityExceptionSchema>;
+
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = z.infer<typeof insertCalendarEventSchema>;
+export type UpdateCalendarEvent = z.infer<typeof updateCalendarEventSchema>;
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type UpdateNotification = z.infer<typeof updateNotificationSchema>;
 
 // ============================================================================
 // MindFit v2 Schema Exports - Admin Users

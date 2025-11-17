@@ -531,6 +531,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/automation/status", requireAuth, automationRoutes.getAutomationStatus);
   console.log("✅ Automation routes registered (Phase 2)");
 
+  // Register Phase 4 Group 2 routes (scheduling system)
+  const { registerTherapistRoutes } = await import("./routes/therapists");
+  const { registerRoomRoutes } = await import("./routes/rooms");
+  const { registerAppointmentRoutes } = await import("./routes/appointments");
+  registerTherapistRoutes(app, requireAuth);
+  registerRoomRoutes(app, requireAuth);
+  registerAppointmentRoutes(app, requireAuth);
+
   const httpServer = createServer(app);
 
   return httpServer;
